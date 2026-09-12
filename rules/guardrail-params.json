@@ -1,0 +1,9 @@
+{
+  "version": "0.1.0",
+  "id": "guardrail-params",
+  "description": "Parameters that indicate a write-capable tool was designed with a brake. Used for the 'destructive without guardrails' classifier AND for the registered counter-measure in protocol/PROTOCOL.md section 4 — the figure that cuts against the publisher's thesis.",
+  "sourceNotes": "Absence of all of these is not proof of a missing guardrail; a server may confirm out of band, or make the operation idempotent server-side without saying so. This is why the classifier is tri-state.",
+  "idempotency": ["idempotency_key", "idempotence_key", "request_id", "client_token", "dedupe_key", "transaction_id", "nonce"],
+  "confirmation": ["confirm", "confirmed", "acknowledge", "acknowledged", "i_understand", "force", "yes"],
+  "dryRun": ["dry_run", "dryrun", "preview", "simulate", "validate_only", "test_mode", "plan_only"]
+}

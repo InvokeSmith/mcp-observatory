@@ -1,0 +1,90 @@
+{
+  "version": "0.1.0",
+  "description": "Phrasings that may not appear in any generated artifact. Enforced by tests/constraints/constraint-08-no-vulnerability-claims.test.ts over every file the report stage emits. Each rule states why it exists, because a reader who disagrees with a rule should be able to argue with its reason.",
+  "appliesTo": [
+    "report.md",
+    "stats.json",
+    "tools.csv",
+    "tools.json",
+    "summary.md"
+  ],
+  "disallowed": [
+    {
+      "id": "PUB-CROSS-TENANT-CLAIM",
+      "reason": "Conflates the measured precondition with an unmeasured capability. Determining that a server permits a cross-tenant write would require invoking a tool, which constraint 1 forbids.",
+      "patterns": [
+        "allows? cross-tenant",
+        "permits? cross-tenant",
+        "enables? cross-tenant",
+        "cross-tenant (write|access|mutation)s? (are|is) possible",
+        "vulnerable to cross-tenant"
+      ]
+    },
+    {
+      "id": "PUB-VULNERABILITY-LABEL",
+      "reason": "Constraint 8. The survey observes declarations. It cannot characterise a server's security posture.",
+      "patterns": [
+        "\\bvulnerab(le|ility|ilities)\\b",
+        "\\binsecure\\b",
+        "\\bexploitabl[ey]\\b",
+        "\\bat risk\\b",
+        "\\bunsafe server",
+        "\\bmisconfigured\\b",
+        "\\bexposed to attack"
+      ]
+    },
+    {
+      "id": "PUB-NAMED-ENTITY",
+      "reason": "Constraint 6. Published output is aggregate. Individual findings go to the affected vendor privately under DISCLOSURE.md.",
+      "patterns": [
+        "\\bscore(card)?s? (for|of) [A-Z]",
+        "\\branked? by (company|vendor|organization)",
+        "\\bworst offenders?\\b",
+        "\\bnamed? and shamed?\\b"
+      ]
+    },
+    {
+      "id": "PUB-SPONSOR-PRODUCT",
+      "reason": "Conflict-of-interest control 3. The publisher is an interested party, so its product may not appear in the findings. Attribution belongs in the README, not in the numbers.",
+      "patterns": [
+        "\\bInvokeSmith\\b",
+        "\\bOutcomeGap\\b",
+        "\\bsmithtasks\\b",
+        "\\bcontact (us|sales)\\b",
+        "\\bbook a (demo|call)\\b",
+        "\\bget started (today|now)\\b",
+        "\\bour (product|platform|solution)\\b",
+        "\\bwe recommend\\b",
+        "\\byou should (adopt|deploy|install|buy)\\b"
+      ]
+    },
+    {
+      "id": "PUB-BARE-PERCENTAGE",
+      "reason": "Section 6 of the protocol. Every figure carries a denominator, an undetermined count, and a confidence interval. A percentage with no denominator cannot be checked. Applied per line: a line may carry percentages only if that same line also carries its denominator or interval \u2014 which is also why the percentages inside a rendered confidence interval do not trip it.",
+      "patterns": [
+        "^(?!.*(?:n\\s*=|denominator|95% CI)).*[0-9](\\.[0-9]+)?%"
+      ]
+    }
+  ],
+  "required": [
+    {
+      "id": "PUB-PRECONDITION-DISCLAIMER",
+      "reason": "The distinction between precondition and vulnerability belongs in the opening paragraph, not a footnote. Getting this wrong discredits the work and everything built on top of it.",
+      "appliesTo": [
+        "report.md"
+      ],
+      "pattern": "precondition"
+    },
+    {
+      "id": "PUB-LIMITATIONS-BEFORE-FINDINGS",
+      "reason": "The limitations section is not optional and is not an appendix.",
+      "appliesTo": [
+        "report.md"
+      ],
+      "orderedSections": [
+        "Limitations",
+        "Findings"
+      ]
+    }
+  ]
+}

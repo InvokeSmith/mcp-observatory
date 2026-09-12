@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+*.pem
+
+# Raw captures are personal-data-adjacent and commercially sensitive.
+# Constraint 7: raw stays private, only the derived tier is published.
+data/runs/

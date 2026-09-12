@@ -1,0 +1,16 @@
+# mcp-observatory opt-out list
+#
+# One host or registrable domain per line. A registrable domain entry
+# (example.com) covers every subdomain (mcp.example.com, eu.mcp.example.com).
+#
+# Lines starting with # are comments. Blank lines are ignored.
+# Entries are lowercased and compared against both the target host and its
+# registrable domain.
+#
+# To be added: open an issue at
+#   https://github.com/invokesmith/mcp-observatory/issues
+# or email observatory@invokesmith.dev
+#
+# Removal takes effect within 24 hours. See OPTOUT.md.
+#
+# --- entries below this line ---

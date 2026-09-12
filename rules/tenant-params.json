@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "id": "tenant-params",
+  "description": "Parameter names by which a CALLER may select whose data is acted upon. The headline classifier. Two lists are published side by side and neither is 'the' answer.",
+  "sourceNotes": "The strict list contains names that are tenant-selecting in essentially every API convention we could find. The ambiguous list contains names that are very often intra-tenant instead — a project_id inside one workspace, a user_id identifying a subject rather than a tenant. Reporting only the inclusive figure would overstate the finding; reporting only the strict figure would understate it. So both ship.",
+  "honestyNote": "A match here is a PRECONDITION, not a vulnerability. The server may derive authorization from the token and reject any mismatch, and most probably do. This scanner cannot tell, because telling would require invoking the tool.",
+  "matching": {
+    "normalize": "Parameter names are split on snake_case, camelCase, kebab-case and dots, lowercased, and rejoined with underscores before comparison, so accountId, account-id and account.id all match account_id.",
+    "alsoMatchDescription": true
+  },
+  "strict": [
+    "account_id", "tenant_id", "workspace_id", "org_id", "organization_id",
+    "customer_id", "owner_id", "team_id", "merchant_id", "store_id", "site_id",
+    "account", "tenant", "workspace", "organization", "merchant",
+    "account_key", "tenant_key", "org_key", "customer_key",
+    "account_uuid", "tenant_uuid", "org_uuid",
+    "on_behalf_of", "acting_as", "impersonate", "as_user", "as_account"
+  ],
+  "ambiguous": [
+    "user_id", "project_id", "user", "project", "client_id", "group_id",
+    "namespace", "environment_id", "app_id"
+  ]
+}

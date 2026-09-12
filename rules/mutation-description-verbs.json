@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "id": "mutation-description-verbs",
+  "description": "Mutation language in the FIRST SENTENCE of a tool description. Signal 3 of 3 for write capability, and the weakest — consulted only when annotations and the name are both silent. Restricted to the first sentence because later sentences routinely describe what a read tool's results can be used for ('...which you can then update').",
+  "sourceNotes": "Phrases, not bare verbs, because description prose is looser than a tool name. A bare 'create' in a description often refers to what the caller may do next rather than what the tool does.",
+  "phrases": [
+    "creates", "updates", "deletes", "removes", "modifies", "writes", "sends",
+    "issues a refund", "refunds", "transfers", "cancels", "voids", "revokes",
+    "deploys", "executes", "runs", "merges", "applies", "moves money",
+    "will create", "will update", "will delete", "will send",
+    "permanently", "irreversible", "cannot be undone", "destructive"
+  ]
+}

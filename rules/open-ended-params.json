@@ -1,0 +1,20 @@
+{
+  "version": "0.1.0",
+  "id": "open-ended-params",
+  "description": "Parameters whose accepted values are effectively unbounded: raw SQL, an arbitrary URL, a filesystem path, or a shell command. Detected three ways — by name, by description language, and structurally by an unconstrained string type.",
+  "sourceNotes": "The structural signal is the interesting one: a string parameter with no enum, no pattern, no maxLength and no format accepts anything at all, regardless of what it is called. Reported separately from the name-based signals so a reader can weigh them differently.",
+  "byName": {
+    "sql": ["sql", "query", "statement", "sql_query", "raw_sql", "where", "filter_expression"],
+    "url": ["url", "uri", "endpoint", "webhook", "webhook_url", "callback_url", "redirect_uri", "target_url"],
+    "path": ["path", "file_path", "filepath", "filename", "file", "directory", "dir", "destination"],
+    "command": ["command", "cmd", "script", "shell", "exec", "code", "expression", "eval"]
+  },
+  "byDescription": [
+    "raw sql", "arbitrary", "any valid", "shell command", "executed directly",
+    "file system path", "absolute path", "unrestricted", "passed through"
+  ],
+  "structural": {
+    "unconstrainedString": "type is 'string' with no enum, pattern, maxLength, or format",
+    "note": "Reported as a distinct signal so it can be excluded by anyone who considers it too broad."
+  }
+}

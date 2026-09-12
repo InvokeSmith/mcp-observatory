@@ -13,7 +13,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { canonicalHash } from '../canon/json.js';
-import { registrableDomain } from '../net/optout.js';
+import { organizationDomain } from '../net/optout.js';
 import { TargetTicket } from '../net/ticket.js';
 import type { Gate } from '../net/gate.js';
 
@@ -26,6 +26,16 @@ export interface Candidate {
   readonly path: string;
   readonly source: SourceId;
   readonly confidence: Confidence;
+  /**
+   * Did the operator publish this endpoint themselves, in a public directory, so that clients would
+   * connect to it?
+   *
+   * This is the most consequential field in the record, and it is not a confidence score. A registry
+   * listing is an operator saying "connect to this"; a hostname inferred from a certificate log is
+   * us guessing. The difference is the basis on which v1 restricts its population — see LEGAL.md
+   * item 1 — so it is recorded per candidate rather than assumed per source at read time.
+   */
+  readonly operatorPublished: boolean;
   /** Free-text note about where exactly this came from. Kept for auditability. */
   readonly provenance: string;
 }
@@ -44,6 +54,14 @@ export interface DiscoverManifest {
   readonly organizations: readonly Organization[];
   /** Distinct (host, path) pairs. The real population size. */
   readonly candidateCount: number;
+  /** How many of those the operator published themselves. The basis of the v1 restriction. */
+  readonly operatorPublishedCount: number;
+  /**
+   * True when any source stopped at our page cap rather than running out. A truncated walk of a
+   * name-ordered cursor is an alphabetical prefix, not a sample, and every downstream figure
+   * inherits that. Carried into the report rather than noticed later.
+   */
+  readonly truncated: boolean;
   /** Rows before deduplication. Kept only so the ratio is visible rather than flattering. */
   readonly rawRowCount: number;
   readonly sources: readonly (readonly [SourceId, number])[];
@@ -113,6 +131,9 @@ export async function discoverFromCertificateTransparency(
           path: '/mcp',
           source: 'ct',
           confidence: 'primary',
+          // A certificate log tells us a name exists. It does not tell us the operator wanted
+          // anyone to connect, and the path is our guess rather than their declaration.
+          operatorPublished: false,
           provenance: `crt.sh q=${pattern}`,
         });
       }
@@ -120,6 +141,140 @@ export async function discoverFromCertificateTransparency(
   }
 
   return candidates;
+}
+
+interface RegistryEntry {
+  readonly server?: {
+    readonly name?: string;
+    readonly version?: string;
+    readonly remotes?: readonly { readonly type?: string; readonly url?: string }[];
+  };
+  readonly _meta?: Readonly<Record<string, { readonly status?: string; readonly isLatest?: boolean }>>;
+}
+
+const REGISTRY_META_KEY = 'io.modelcontextprotocol.registry/official';
+
+/** Remote transports we can actually speak. A stdio package is not a reachable endpoint. */
+const REACHABLE_REMOTE_TYPES = new Set(['streamable-http', 'sse']);
+
+/**
+ * The official MCP registry.
+ *
+ * This is the v1 population, and the reason is not coverage — it is narrower than certificate
+ * transparency, not wider. It is that a registry entry is the operator publishing an endpoint in a
+ * public directory precisely so that clients will connect to it. That makes connecting a much
+ * easier question than connecting to a hostname we inferred from a certificate, which is why
+ * LEGAL.md item 1 shrinks so much when the population is restricted this way.
+ *
+ * The cost is a real skew toward organizations that participate in registries, which is a discovery
+ * bias like any other and is declared as one.
+ */
+export interface SourceResult {
+  readonly candidates: readonly Candidate[];
+  /**
+   * True when we stopped because of our own page cap rather than because the source ran out.
+   *
+   * This must never be silent. The registry cursor is ordered by server name, so a run that stops
+   * early does not return a sample — it returns an alphabetical prefix. A first version of this code
+   * capped at 50 pages against a registry of more than 20,000 entries and reported the result as a
+   * population, which is precisely the kind of artifact this project exists to catch.
+   */
+  readonly truncated: boolean;
+  readonly pagesFetched: number;
+}
+
+export async function discoverFromRegistry(
+  gate: Gate,
+  baseUrl = 'https://registry.modelcontextprotocol.io',
+  maxPages = 2000,
+): Promise<SourceResult> {
+  const candidates: Candidate[] = [];
+  const origin = new URL(baseUrl).origin;
+
+  const ticket = new TargetTicket(
+    'discover:mcp-registry',
+    origin,
+    '/v0/servers',
+    'http-metadata',
+    new Set(['GET']),
+    maxPages + 2,
+  );
+
+
+  const seenCursors = new Set<string>();
+  let cursor: string | undefined;
+  let pages = 0;
+  let truncated = false;
+
+  for (;;) {
+    const url = new URL('/v0/servers', origin);
+    url.searchParams.set('limit', '100');
+    if (cursor !== undefined) url.searchParams.set('cursor', cursor);
+
+    let payload: {
+      servers?: readonly RegistryEntry[];
+      metadata?: { nextCursor?: string };
+    };
+    try {
+      const response = await gate.fetch(ticket, url.href, { method: 'GET' });
+      if (!response.ok) {
+        // Stopping short because the source failed is also an incomplete walk, not a complete one.
+        truncated = true;
+        break;
+      }
+      payload = (await response.json()) as typeof payload;
+    } catch {
+      truncated = true;
+      break;
+    }
+
+    pages += 1;
+
+    for (const entry of payload.servers ?? []) {
+      const meta = entry._meta?.[REGISTRY_META_KEY];
+
+      // The registry keeps every published version. Without these two filters the same server
+      // arrives once per release, and a prolific publisher silently outweighs everyone else.
+      if (meta?.isLatest !== true) continue;
+      if (meta.status !== 'active') continue;
+
+      for (const remote of entry.server?.remotes ?? []) {
+        if (remote.type === undefined || !REACHABLE_REMOTE_TYPES.has(remote.type)) continue;
+        if (remote.url === undefined) continue;
+
+        let parsed: URL;
+        try {
+          parsed = new URL(remote.url);
+        } catch {
+          continue;
+        }
+        if (parsed.protocol !== 'https:') continue;
+
+        candidates.push({
+          host: parsed.hostname.toLowerCase(),
+          // The operator's own path, not one we guessed.
+          path: parsed.pathname === '' ? '/' : parsed.pathname,
+          source: 'registry',
+          confidence: 'primary',
+          operatorPublished: true,
+          provenance: `mcp-registry ${entry.server?.name ?? 'unknown'}@${entry.server?.version ?? '?'} (${remote.type})`,
+        });
+      }
+    }
+
+    const next = payload.metadata?.nextCursor;
+    if (next === undefined) break;
+    // A cursor we have already followed is a loop, not a page.
+    if (seenCursors.has(next)) break;
+    if (pages >= maxPages) {
+      truncated = true;
+      break;
+    }
+    seenCursors.add(next);
+    cursor = next;
+  }
+
+  return { candidates, truncated, pagesFetched: pages };
 }
 
 /**
@@ -134,6 +289,7 @@ export function pathCandidates(domains: readonly string[]): readonly Candidate[]
       path,
       source: 'path-candidate' as const,
       confidence: 'lower' as const,
+      operatorPublished: false,
       provenance: `generated path candidate for ${domain}`,
     })),
   );
@@ -155,16 +311,13 @@ export async function collapseToOrganizations(
   for (const candidate of candidates) {
     if (!isRoutableHost(candidate.host)) continue;
 
-    const domain = registrableDomain(candidate.host);
+    // The precise reading. On a shared platform the collapse otherwise runs the wrong way: hundreds
+    // of unrelated tenants under one suffix become one data point, silently discarding the rest.
+    const key = organizationDomain(candidate.host, shared);
 
-    // No registrable domain means no public suffix: a bare internal name like `mcp`, which
-    // certificate logs are full of. It is not reachable and not an organization.
-    if (domain === null) continue;
-
-    // On a shared platform the collapse runs the wrong way. Thirty-one unrelated projects on
-    // *.hosted.app are one registrable domain and would count as one data point, silently
-    // discarding thirty of them, so each host stays its own organization.
-    const key = shared.has(domain) ? candidate.host : domain;
+    // No domain at all means no public suffix: a bare internal name like `mcp`, which certificate
+    // logs are full of. Not reachable, and not an organization.
+    if (key === null) continue;
 
     const list = byDomain.get(key) ?? [];
     list.push(candidate);
@@ -204,6 +357,13 @@ export async function collapseToOrganizations(
  * in the first live run, 2,839 rows were 142 distinct hosts. Counting rows would overstate the
  * population by a factor of twenty.
  */
+/**
+ * v1's population restriction. See LEGAL.md item 1.
+ */
+export function onlyOperatorPublished(candidates: readonly Candidate[]): readonly Candidate[] {
+  return candidates.filter((candidate) => candidate.operatorPublished);
+}
+
 export function deduplicate(candidates: readonly Candidate[]): readonly Candidate[] {
   const seen = new Map<string, Candidate>();
   for (const candidate of candidates) {
@@ -220,6 +380,7 @@ export function deduplicate(candidates: readonly Candidate[]): readonly Candidat
 export async function buildDiscoverManifest(
   candidates: readonly Candidate[],
   sharedPlatforms: readonly string[] = [],
+  truncated = false,
 ): Promise<DiscoverManifest> {
   const deduped = deduplicate(candidates);
   const organizations = await collapseToOrganizations(deduped, sharedPlatforms);
@@ -240,6 +401,8 @@ export async function buildDiscoverManifest(
     manifestHash,
     organizations,
     candidateCount: deduped.length,
+    operatorPublishedCount: deduped.filter((c) => c.operatorPublished).length,
+    truncated,
     rawRowCount: candidates.length,
     sources: [...sourceCounts.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)),
   };

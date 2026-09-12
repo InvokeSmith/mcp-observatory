@@ -15,7 +15,9 @@ import { classifySnapshot } from './stages/classify.js';
 import {
   buildDiscoverManifest,
   discoverFromCertificateTransparency,
+  discoverFromRegistry,
   loadSharedPlatforms,
+  onlyOperatorPublished,
   type Candidate,
 } from './stages/discover.js';
 import { buildReport } from './stages/report.js';
@@ -55,7 +57,13 @@ COMMANDS
 OPTIONS
   --data <dir>        Data root (default: data)
   --snapshot <id>     Snapshot id, for classify and report
-  --sources <list>    Comma-separated discover sources (default: ct)
+  --sources <list>    Comma-separated discover sources: registry, ct
+                      (default: registry — see --all-candidates)
+  --all-candidates    Keep candidates the operator did not publish themselves.
+                      Off by default: v1's population is endpoints an operator
+                      listed in a public directory so that clients would connect
+                      to them, which is a much narrower question than scanning
+                      hostnames inferred from certificate logs. See LEGAL.md.
   --limit <n>         Cap candidates, for a first run
   --retention <days>  Retention window for sweep (default: 90)
   --skip-identity-check
@@ -77,7 +85,8 @@ async function main(): Promise<number> {
     options: {
       data: { type: 'string', default: 'data' },
       snapshot: { type: 'string' },
-      sources: { type: 'string', default: 'ct' },
+      sources: { type: 'string', default: 'registry' },
+      'all-candidates': { type: 'boolean', default: false },
       limit: { type: 'string' },
       retention: { type: 'string', default: '90' },
       'skip-identity-check': { type: 'boolean', default: false },
@@ -168,9 +177,27 @@ async function commandDiscover(values: Values): Promise<number> {
   const sources = String(values.sources).split(',').map((s) => s.trim());
 
   let candidates: readonly Candidate[] = [];
+  let truncated = false;
+
+  if (sources.includes('registry')) {
+    process.stderr.write('querying the official MCP registry...\n');
+    const result = await discoverFromRegistry(gate);
+    candidates = [...candidates, ...result.candidates];
+    truncated ||= result.truncated;
+    process.stderr.write(
+      `  ${result.pagesFetched} pages, ${result.candidates.length} remote endpoints` +
+        `${result.truncated ? ' (TRUNCATED at the page cap)' : ''}\n`,
+    );
+  }
+
   if (sources.includes('ct')) {
     process.stderr.write('querying certificate transparency logs...\n');
-    candidates = await discoverFromCertificateTransparency(gate);
+    candidates = [...candidates, ...(await discoverFromCertificateTransparency(gate))];
+  }
+
+  const beforeRestriction = candidates.length;
+  if (values['all-candidates'] !== true) {
+    candidates = onlyOperatorPublished(candidates);
   }
 
   if (values.limit !== undefined) {
@@ -178,15 +205,27 @@ async function commandDiscover(values: Values): Promise<number> {
   }
 
   const sharedPlatforms = await loadSharedPlatforms();
-  const manifest = await buildDiscoverManifest(candidates, sharedPlatforms.platforms);
+  const manifest = await buildDiscoverManifest(candidates, sharedPlatforms.platforms, truncated);
   const outDir = join(dataDir, 'discover');
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, 'manifest.json'), canonicalize(manifest), 'utf8');
 
+  const dropped = beforeRestriction - candidates.length;
+
   process.stdout.write(
     `discovered ${manifest.candidateCount} distinct candidates across ` +
       `${manifest.organizations.length} organizations ` +
-      `(from ${manifest.rawRowCount} raw certificate rows)\n` +
+      `(from ${manifest.rawRowCount} source rows)\n` +
+      `operator-published: ${manifest.operatorPublishedCount}/${manifest.candidateCount}\n` +
+      (dropped > 0
+        ? `excluded ${dropped} candidates the operator did not publish ` +
+          `(--all-candidates to keep them)\n`
+        : '') +
+      (manifest.truncated
+        ? 'WARNING: a source stopped at the page cap. The registry cursor is name-ordered, so\n' +
+          '         this is an alphabetical prefix rather than a sample. Every figure derived\n' +
+          '         from it inherits that, and the manifest records it.\n'
+        : '') +
       `manifest hash: ${manifest.manifestHash}\n` +
       `written to ${join(outDir, 'manifest.json')}\n` +
       `\nNo MCP server was contacted. Requests made: ${gate.captures.length} ` +

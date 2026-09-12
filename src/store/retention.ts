@@ -1,11 +1,18 @@
 /**
- * Constraint 7. Raw captures are private and time-limited; only derived data is published.
+ * Constraint 7. In v1 this is enforced by not having a raw tier at all.
  *
- * The structural point is that raw captures live in `data/runs/`, which is mutable, gitignored and
- * deletable, while sealed snapshots live in `data/snapshots/`, which is content-addressed and
- * immutable. Keeping raw inside the hashed tree would mean the 90-day sweep mutates a directory
- * whose name is a hash of its contents — retention and reproducibility would be in permanent
- * conflict, and one of them would quietly lose.
+ * Captures live in memory for the duration of one probe and are discarded with the process; nothing
+ * writes a response body to disk. The cheapest way to answer "is a 90-day retention window
+ * defensible, and does GDPR reach incidental personal data in a tool description?" turned out to be
+ * to stop needing an answer. The cost is that a classifier change cannot be re-derived against old
+ * raw data — which matters later, not now.
+ *
+ * This module stays as a safety net rather than as the primary control: if anything ever does write
+ * to `data/runs/`, `observatory sweep` removes it past the window. The structural separation it
+ * assumes still holds and still matters — raw would live in `data/runs/`, mutable and gitignored,
+ * never inside `data/snapshots/`, whose directory name is a hash of its own contents. Putting raw
+ * inside the hashed tree would set retention and reproducibility in permanent conflict, and one of
+ * them would quietly lose.
  */
 import { readdir, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';

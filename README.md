@@ -72,8 +72,8 @@ These are enforced in code and each is covered by a named test in [`tests/constr
    [`/.well-known/mcp-scan-optout`](protocol/MCP-SCAN-OPTOUT.md) an operator can use without asking
    us. Checked before every probe. Removal takes effect within 24 hours.
 6. **Aggregates only.** Published output names no company.
-7. **Retention.** Raw captures stay private with a defined window; only the derived dataset is
-   published.
+7. **Retention.** v1 keeps no raw tier at all. Captures record a byte count rather than a body,
+   live in memory for one probe, and die with the process. Only the derived dataset is published.
 8. **No inference beyond observation.** The scanner reports what a schema *declares*. It never
    labels a server "vulnerable."
 
@@ -121,7 +121,7 @@ bun test
 The pipeline is four stages, each independently runnable and resumable:
 
 ```bash
-bun run observatory discover --sources ct       # build a candidate list; contacts no MCP server
+bun run observatory discover                    # official MCP registry; contacts no MCP server
 bun run observatory probe --run <run-id>        # two protocol calls per host; ends by sealing
 bun run observatory classify --snapshot <id>    # pure; no network
 bun run observatory report --snapshot <id> --ruleset <id> --optout <id>
@@ -135,9 +135,10 @@ specific rule, change it, and re-run the numbers yourself.
 
 Stated in full in every generated report, before the findings rather than after them. In brief:
 
-- **Discovery bias.** Certificate-transparency matching finds companies that dedicate an `mcp.*`
-  subdomain. Companies serving MCP at a path on an existing API host are underrepresented. The
-  population is "servers discoverable this way," never "all MCP servers."
+- **Discovery bias.** v1 surveys the official MCP registry: endpoints operators published so that
+  clients would connect to them. That skews toward organizations who participate in registries,
+  and it is deliberately narrower than scanning for `mcp.*` subdomains — see [`LEGAL.md`](LEGAL.md)
+  item 1. The population is "servers discoverable this way," never "all MCP servers."
 - **Schema-only inference.** Everything rests on what a server declares. Declarations may understate
   or overstate real behavior.
 - **Precondition, not vulnerability.** Restated above, and in full in every report.

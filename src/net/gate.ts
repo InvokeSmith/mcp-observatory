@@ -23,7 +23,17 @@ import { PolitenessQueue, backoffDelayMs } from './politeness.js';
 import { USER_AGENT } from '../config/identity.js';
 import type { TargetTicket } from './ticket.js';
 
-/** One entry per request that actually left. The audit trail for every constraint. */
+/**
+ * One entry per request that actually left. The audit trail for every constraint.
+ *
+ * Note what is absent: response bodies. A capture records how many bytes arrived, never the bytes.
+ * v1 has no raw tier at all — captures live in memory for the duration of one probe and are
+ * discarded with the process. That is a deliberate narrowing rather than an omission: a persisted
+ * raw tier of full response bodies would hold tool descriptions that in the wild contain example
+ * values, internal contacts and employee names, which turns a retention window into a GDPR question
+ * and a breach-notification exposure. Not keeping it is cheaper than being allowed to keep it.
+ * See LEGAL.md item 2.
+ */
 export interface CaptureEntry {
   readonly targetId: string;
   readonly purpose: string;
@@ -351,6 +361,16 @@ export class Gate {
   }
 }
 
+/**
+ * Headers we do not even hold in memory.
+ *
+ * `set-cookie` is a credential in all but name, and a capture exists to prove what we sent and what
+ * status came back — neither of which needs it.
+ */
+const UNRECORDED_RESPONSE_HEADERS = new Set(['set-cookie', 'set-cookie2']);
+
 function headerPairs(headers: Headers): ReadonlyArray<readonly [string, string]> {
-  return [...headers.entries()].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return [...headers.entries()]
+    .filter(([name]) => !UNRECORDED_RESPONSE_HEADERS.has(name.toLowerCase()))
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 }

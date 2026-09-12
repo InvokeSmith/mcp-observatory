@@ -43,9 +43,50 @@ export function parseOptOutList(text: string, fetchedAt: number): OptOutList {
   return { entries, fetchedAt };
 }
 
-/** Registrable domain, e.g. `eu.mcp.example.co.uk` -> `example.co.uk`. Offline; no network. */
+/**
+ * Registrable domain under ICANN suffixes only, e.g. `eu.mcp.example.co.uk` -> `example.co.uk`.
+ * Offline; no network.
+ *
+ * This is the BROAD reading, and it is the right one for opt-out matching and for rate limiting:
+ * `alice.workers.dev` collapses to `workers.dev`, so one opt-out entry covers more hosts and one
+ * politeness slot covers more traffic. Both errors run in the safe direction — we contact fewer
+ * people than we might have been entitled to.
+ *
+ * It is the WRONG reading for counting organizations. See {@link organizationDomain}.
+ */
 export function registrableDomain(host: string): string | null {
   return getDomain(host);
+}
+
+/**
+ * The precise reading, for deciding what counts as one organization.
+ *
+ * The Public Suffix List has a private section in which platforms register themselves precisely so
+ * that their tenants are treated as separate sites — `workers.dev`, `vercel.app`, `github.io`.
+ * `tldts` ignores that section by default, which is why a first version of this code collapsed 427
+ * unrelated Cloudflare Workers tenants into a single "organization" and would have counted them as
+ * one data point.
+ *
+ * The asymmetry with {@link registrableDomain} is deliberate: when deciding whom to contact, err
+ * broad and contact fewer people; when counting, count precisely.
+ *
+ * `sharedPlatforms` supplements the PSL for platforms that have not registered there — see
+ * `rules/shared-platforms.json`. Every entry in that file is a candidate PSL submission.
+ */
+export function organizationDomain(
+  host: string,
+  sharedPlatforms: ReadonlySet<string> = new Set(),
+): string | null {
+  const lower = host.toLowerCase();
+
+  // A platform the PSL does not know about: keep the full host, since each name is a tenant.
+  const icann = getDomain(lower);
+  if (icann !== null && sharedPlatforms.has(icann)) return lower;
+
+  const precise = getDomain(lower, { allowPrivateDomains: true });
+  if (precise !== null) return precise;
+
+  return icann;
 }
 
 /**

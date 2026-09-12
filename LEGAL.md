@@ -4,10 +4,29 @@ This document exists to be answered, not to stand as an answer. Nothing here is 
 nothing here asserts that the activity described is lawful in any particular jurisdiction. Items are
 open until counsel closes them in writing and the closure is recorded here with a date.
 
-**No live probing of third-party servers should begin until items 1, 2 and 5 are closed.** Stage 1
+**No live probing of third-party servers should begin until items 1 and 5 are closed.** Stage 1
 (`discover`) contacts no MCP server and is a separate question.
 
+Items 1 and 2 were narrowed by changing the design rather than by buying a broader opinion. v1
+surveys only endpoints operators published in a public directory, and retains no raw captures at
+all. Both narrowings cost something, and what they cost is recorded against each item.
+
 ## 1. Lawfulness of unsolicited connections
+
+**Narrowed.** v1 surveys the official MCP registry: endpoints whose operators published them in a
+public directory so that MCP clients would connect to them. The question is therefore not "may we
+scan arbitrary internet hosts" but the much smaller one:
+
+> May we connect, as an ordinary MCP client, to an endpoint its operator listed in a public registry
+> for the purpose of clients connecting to it, sending only the two calls every client sends and
+> stopping at any credential challenge?
+
+Certificate-transparency discovery stays implemented and is off by default; `--all-candidates`
+restores it, and with it the broader question below, which should be answered first. The cost of the
+restriction is a real skew toward registry-participating organizations, declared as a discovery bias
+in every report.
+
+The broader question, retained for when it is needed:
 
 An MCP `initialize` plus `tools/list` is exactly what any MCP client sends, to a service published
 on the public internet, with no authentication attempted and no access control circumvented. That is
@@ -29,18 +48,24 @@ publication, and if so, on what basis, given that hosting location and company d
 
 ## 2. Retention of raw captures
 
-Raw captures hold full response bodies: tool names, descriptions, JSON Schemas, and headers. These
-are commercially sensitive, and tool descriptions in the wild may contain personal data (example
-values, internal contacts, employee names).
+**Largely closed by design: v1 retains nothing.** There is no raw tier. A capture holds a byte count
+rather than a body, `Set-Cookie` is never recorded, and everything lives in memory for one probe and
+dies with the process. Nothing writes a response body to disk, and a test asserts it.
 
-- Is a **90-day** raw retention window defensible? That is the proposed default and it is
-  configurable.
-- Does GDPR apply to incidental personal data in a tool description, and if so, what is the lawful
-  basis — legitimate interest for security research?
-- Is a scrub-on-ingest step (removing detected secrets and personal data *before* the raw capture is
-  written, not before publication) sufficient, or does it need to be provably lossless in the other
-  direction?
-- What is the breach-notification exposure if the private raw tier were compromised?
+That removes the questions that made this expensive: the defensibility of a 90-day window, the lawful
+basis for storing incidental personal data found in tool descriptions, the sufficiency of
+scrub-on-ingest, and the breach exposure of a private raw tier. It was cheaper to stop needing the
+answers than to buy them.
+
+The cost: a classifier correction cannot be re-derived against old raw data, so it applies only to
+future snapshots. Reintroducing a raw tier reopens every question above.
+
+What remains, and is much smaller:
+
+- Does transient in-memory processing of incidental personal data during a probe create any
+  obligation, given that nothing is stored and nothing is published?
+- Does the derived tier -- tool names and schema shapes, descriptions never retained -- count as
+  personal data in any target jurisdiction? Overlaps item 3.
 
 ## 3. Publication of the derived dataset
 
@@ -89,8 +114,8 @@ protocol constrains the analysis accordingly.
 
 | # | Item | Status | Closed by | Date |
 |---|---|---|---|---|
-| 1 | Unsolicited connections | **OPEN** | — | — |
-| 2 | Raw retention | **OPEN** | — | — |
+| 1 | Unsolicited connections | **OPEN** — narrowed to registry-published endpoints | — | — |
+| 2 | Raw retention | **CLOSED BY DESIGN** — no raw tier in v1 | — | — |
 | 3 | Dataset publication | **OPEN** | — | — |
 | 4 | Disclosure timeline | **OPEN** | — | — |
 | 5 | Identity and representations | **OPEN** | — | — |

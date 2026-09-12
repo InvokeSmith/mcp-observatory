@@ -1,10 +1,10 @@
 /**
  * Constraint 7: retention.
  *
- * The test that matters is the last one. If raw captures lived inside the content-addressed
- * snapshot, the retention sweep would change the snapshot id, and reproducibility and retention
- * would be in permanent conflict. Asserting that deletion leaves the id untouched is what proves
- * the two tiers are actually separate rather than nominally separate.
+ * v1 satisfies this by not retaining anything: captures live in memory for one probe and die with
+ * the process. The sweep stays as a safety net. The snapshot-id test still matters, because it is
+ * what proves the tiers are separate rather than nominally separate, and it is what would keep
+ * retention and reproducibility from conflicting when a raw tier does return.
  */
 import { describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
@@ -72,6 +72,56 @@ describe('constraint 7: retention', () => {
     const afterSweep = await seal({ discoverManifestHash: 'test-discover-manifest', leaves });
 
     expect(afterSweep.manifest.snapshotId).toBe(first.manifest.snapshotId);
+  });
+
+  /**
+   * The v1 guarantee. A capture records how many bytes arrived, never the bytes — so there is
+   * nothing to retain, nothing to scrub, and no window to defend.
+   */
+  test('captures record byte counts, never bodies, and never Set-Cookie', async () => {
+    const { probeTarget } = await import('../../src/stages/probe.js');
+    const { FixtureServer } = await import('../fixtures/server.js');
+    const { makeGate } = await import('../helpers/harness.js');
+
+    const server = new FixtureServer({ kind: 'open' });
+    server.start();
+    try {
+      const { gate, hostState } = makeGate();
+      await probeTarget(gate, hostState, {
+        targetId: 'retention',
+        orgKey: 'org',
+        origin: server.url,
+        path: server.mcpPath,
+      });
+
+      expect(gate.captures.length).toBeGreaterThan(0);
+      for (const capture of gate.captures) {
+        expect(Object.keys(capture)).not.toContain('body');
+        expect(Object.keys(capture)).not.toContain('responseBody');
+        expect(typeof capture.bodyBytes).toBe('number');
+        const names = capture.responseHeaders.map(([n]) => n.toLowerCase());
+        expect(names).not.toContain('set-cookie');
+      }
+
+      // Whatever the probe learned about tool schemas, no capture holds the text it came from.
+      const serialized = JSON.stringify(gate.captures);
+      expect(serialized).not.toContain('refund_payment');
+      expect(serialized).not.toContain('Refund a payment');
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('no stage writes a raw capture to disk', async () => {
+    const { readdir } = await import('node:fs/promises');
+    // data/runs/ is where a raw tier would live. v1 never creates it.
+    let entries: string[] = [];
+    try {
+      entries = await readdir('data/runs');
+    } catch {
+      entries = [];
+    }
+    expect(entries).toEqual([]);
   });
 
   test('the snapshot leaf type has no field that could hold a response body', async () => {

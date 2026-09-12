@@ -20,14 +20,14 @@ export const OPT_OUT_URL = 'https://github.com/invokesmith/mcp-observatory/blob/
 /**
  * A monitored mailbox, or null.
  *
- * Null rather than a plausible-looking address on purpose. An opt-out channel that does not receive
- * mail is worse than no channel at all: an operator who writes to it believes they have opted out
- * and has not. Until a real mailbox exists, the documented channel is the issue tracker, which
- * demonstrably works and which anyone can verify from outside.
- *
- * Setting this makes preflight check that the domain accepts mail at all.
+ * Preflight checks that this address's domain has an MX record, because publishing an address on a
+ * domain that accepts no mail is the failure this project already shipped once. Note what that check
+ * does NOT establish: an MX record proves the domain receives mail, not that this particular
+ * mailbox or alias exists, and certainly not that anyone reads it. Nothing automated can establish
+ * the last part. The opt-out promise in OPTOUT.md is a commitment by a person, and the check below
+ * only rules out the most embarrassing way of breaking it.
  */
-export const CONTACT_EMAIL: string | null = null;
+export const CONTACT_EMAIL: string | null = 'observatory@forgestack.dev';
 
 /** The self-service opt-out path an operator can serve without asking us. */
 export const WELL_KNOWN_OPT_OUT_PATH = '/.well-known/mcp-scan-optout';

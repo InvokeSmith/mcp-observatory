@@ -31,15 +31,16 @@ it is never contacted by any stage.
 `optout.txt` in this repository. Entries are one host or registrable domain per line. A registrable
 domain entry covers every subdomain.
 
-To be added, open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
+To be added, either:
 
-We do not ask you to justify the request, and we do not ask who you are. An issue saying only a
+- email **observatory@forgestack.dev**, or
+- open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
+
+We do not ask you to justify the request, and we do not ask who you are. A message saying only a
 domain name is a complete request.
 
-**On the absence of an email address.** There is deliberately no contact email here yet. Publishing
-one before a mailbox exists and is monitored would be worse than publishing none: you would write to
-it, believe you had opted out, and not have. A monitored address will be added before any live
-probing begins, and the scanner checks that the domain accepts mail at all before it will run.
+Use the issue tracker if you want a public record that you asked and when. Use email if you would
+rather not have one.
 
 ## Timing
 

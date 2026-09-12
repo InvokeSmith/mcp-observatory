@@ -7,7 +7,7 @@
 # Entries are lowercased and compared against both the target host and its
 # registrable domain.
 #
-# To be added: open an issue at
+# To be added: email observatory@forgestack.dev, or open an issue at
 #   https://github.com/InvokeSmith/mcp-observatory/issues
 #
 # Removal takes effect within 24 hours. See OPTOUT.md.

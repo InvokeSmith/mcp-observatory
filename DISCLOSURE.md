@@ -42,11 +42,12 @@ what we did not do to verify it.
 
 ## Contact
 
-Open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
+**observatory@forgestack.dev** for anything you would rather not raise in public, which is most of what this policy
+covers.
 
-For something you would rather not raise in public, a private channel and a PGP key will be
-published before any live probing begins. Until then there is deliberately no email address here: an
-address that does not receive mail is worse than none, because you would believe you had reached us.
+Public alternative, if you prefer a visible record: https://github.com/InvokeSmith/mcp-observatory/issues
+
+PGP key: to be published before first live probing.
 
 ## If you would rather not be surveyed at all
 

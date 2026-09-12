@@ -2,7 +2,12 @@
 
 ## Reporting a vulnerability in this tool
 
-Email **observatory@invokesmith.dev**. Please do not open a public issue for a security report.
+Open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
+
+A private channel will be published before any live probing begins. Until then there is deliberately
+no email address here — an address that does not receive mail is worse than none. If a finding is
+serious enough that you would rather not post it publicly, open an issue saying only that, and we
+will arrange a private channel.
 
 We care most about a specific class of bug here: **anything that would cause this scanner to contact
 a server it should not, or to send a request it should not.** That includes

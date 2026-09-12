@@ -7,7 +7,14 @@
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { ProbeClient } from '../../src/mcp/probe-client.js';
-import { CLIENT_INFO, CONTACT_URL, isPlaceholderIdentity, PROJECT_NAME, USER_AGENT } from '../../src/config/identity.js';
+import {
+  CLIENT_INFO,
+  CONTACT_EMAIL,
+  CONTACT_URL,
+  isPlaceholderIdentity,
+  PROJECT_NAME,
+  USER_AGENT,
+} from '../../src/config/identity.js';
 import { GateRefusal } from '../../src/net/errors.js';
 import { FixtureServer } from '../fixtures/server.js';
 import { makeGate, makeTicket } from '../helpers/harness.js';
@@ -65,6 +72,26 @@ describe('constraint 3: identify yourself', () => {
   test('the identity is not a placeholder', () => {
     expect(isPlaceholderIdentity()).toBe(false);
     expect(CONTACT_URL).toStartWith('https://');
+  });
+
+  /**
+   * A contact address that receives nothing is worse than none: an operator writes to it, believes
+   * they have opted out, and has not. This project shipped exactly that defect once — an address
+   * invented for a domain with no MX, promised in four public documents — so the rule is now that
+   * a published address must be one the preflight can check.
+   */
+  test('no contact channel is promised that cannot be verified', async () => {
+    const { readFile } = await import('node:fs/promises');
+    for (const file of ['OPTOUT.md', 'DISCLOSURE.md', 'SECURITY.md', 'optout.txt', 'README.md']) {
+      const text = await readFile(file, 'utf8');
+      const addresses = text.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) ?? [];
+      for (const address of addresses) {
+        expect(
+          address,
+          `${file} promises ${address}, which identity.ts does not declare as CONTACT_EMAIL`,
+        ).toBe(CONTACT_EMAIL ?? '<no contact email is declared>');
+      }
+    }
   });
 
   /**

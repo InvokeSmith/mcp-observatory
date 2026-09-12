@@ -8,8 +8,7 @@
 # registrable domain.
 #
 # To be added: open an issue at
-#   https://github.com/invokesmith/mcp-observatory/issues
-# or email observatory@invokesmith.dev
+#   https://github.com/InvokeSmith/mcp-observatory/issues
 #
 # Removal takes effect within 24 hours. See OPTOUT.md.
 #

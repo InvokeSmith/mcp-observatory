@@ -17,6 +17,18 @@ export const CONTACT_URL = 'https://github.com/invokesmith/mcp-observatory';
 /** The opt-out instructions an operator reads. Must resolve before any live probing. */
 export const OPT_OUT_URL = 'https://github.com/invokesmith/mcp-observatory/blob/main/OPTOUT.md';
 
+/**
+ * A monitored mailbox, or null.
+ *
+ * Null rather than a plausible-looking address on purpose. An opt-out channel that does not receive
+ * mail is worse than no channel at all: an operator who writes to it believes they have opted out
+ * and has not. Until a real mailbox exists, the documented channel is the issue tracker, which
+ * demonstrably works and which anyone can verify from outside.
+ *
+ * Setting this makes preflight check that the domain accepts mail at all.
+ */
+export const CONTACT_EMAIL: string | null = null;
+
 /** The self-service opt-out path an operator can serve without asking us. */
 export const WELL_KNOWN_OPT_OUT_PATH = '/.well-known/mcp-scan-optout';
 

@@ -31,12 +31,15 @@ it is never contacted by any stage.
 `optout.txt` in this repository. Entries are one host or registrable domain per line. A registrable
 domain entry covers every subdomain.
 
-To be added, either:
+To be added, open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
 
-- open an issue at https://github.com/invokesmith/mcp-observatory/issues, or
-- email **observatory@invokesmith.dev**
+We do not ask you to justify the request, and we do not ask who you are. An issue saying only a
+domain name is a complete request.
 
-We do not ask you to justify the request, and we do not ask who you are.
+**On the absence of an email address.** There is deliberately no contact email here yet. Publishing
+one before a mailbox exists and is monitored would be worse than publishing none: you would write to
+it, believe you had opted out, and not have. A monitored address will be added before any live
+probing begins, and the scanner checks that the domain accepts mail at all before it will run.
 
 ## Timing
 

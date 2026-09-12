@@ -7,8 +7,15 @@
  *
  * So identity is checked before probing, and failure is a refusal rather than a warning.
  */
+import { resolveMx } from 'node:dns/promises';
 import { realFetchRef } from './bootstrap-deny-egress.js';
-import { CONTACT_URL, isPlaceholderIdentity, OPT_OUT_URL, USER_AGENT } from '../config/identity.js';
+import {
+  CONTACT_EMAIL,
+  CONTACT_URL,
+  isPlaceholderIdentity,
+  OPT_OUT_URL,
+  USER_AGENT,
+} from '../config/identity.js';
 
 export interface PreflightResult {
   readonly ok: boolean;
@@ -32,6 +39,30 @@ async function reachable(url: string): Promise<{ url: string; ok: boolean; detai
   }
 }
 
+/**
+ * A published address on a domain with no MX accepts nothing. This does not prove a mailbox is
+ * monitored — nothing can — but it catches the failure that actually happened: an address invented
+ * for a domain that does not exist, promised in four public documents.
+ */
+async function mailReachable(address: string): Promise<{ url: string; ok: boolean; detail: string }> {
+  const domain = address.split('@')[1];
+  if (domain === undefined) {
+    return { url: address, ok: false, detail: 'not an email address' };
+  }
+  try {
+    const records = await resolveMx(domain);
+    return records.length > 0
+      ? { url: address, ok: true, detail: `${records.length} MX record(s)` }
+      : { url: address, ok: false, detail: 'domain has no MX record' };
+  } catch (error) {
+    return {
+      url: address,
+      ok: false,
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function preflightIdentity(): Promise<PreflightResult> {
   if (isPlaceholderIdentity()) {
     return {
@@ -40,7 +71,11 @@ export async function preflightIdentity(): Promise<PreflightResult> {
     };
   }
 
-  const checks = await Promise.all([reachable(CONTACT_URL), reachable(OPT_OUT_URL)]);
+  const checks = await Promise.all([
+    reachable(CONTACT_URL),
+    reachable(OPT_OUT_URL),
+    ...(CONTACT_EMAIL === null ? [] : [mailReachable(CONTACT_EMAIL)]),
+  ]);
   return { ok: checks.every((c) => c.ok), checks };
 }
 

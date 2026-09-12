@@ -42,9 +42,11 @@ what we did not do to verify it.
 
 ## Contact
 
-**observatory@invokesmith.dev**
+Open an issue: https://github.com/InvokeSmith/mcp-observatory/issues
 
-PGP key: to be published before first live probing.
+For something you would rather not raise in public, a private channel and a PGP key will be
+published before any live probing begins. Until then there is deliberately no email address here: an
+address that does not receive mail is worse than none, because you would believe you had reached us.
 
 ## If you would rather not be surveyed at all
 

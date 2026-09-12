@@ -93,6 +93,13 @@ Four layers, weakest last, because the honest ranking matters more than the coun
 The residual gap, stated plainly: *we never called `tools/call`* is a claim about our bytes. It is
 not a claim about whether a given server treats `initialize` or `tools/list` as side-effecting.
 
+## What it actually sends
+
+[`protocol/example-requests.md`](protocol/example-requests.md) is the complete list of requests this
+scanner makes to one host, byte for byte, regenerated from a real probe so it cannot drift from the
+code. Five requests against an open server; most hosts see fewer. You should not have to read our
+source or take our word for it.
+
 ## Opting out
 
 Either mechanism works, and neither requires our permission:

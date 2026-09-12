@@ -88,3 +88,32 @@ describe('constraint 6: aggregates only', () => {
     expect(after['tools.csv']).not.toContain('org-100');
   });
 });
+
+/**
+ * The half of constraint 6 that lives in the repository layout rather than in the report generator.
+ *
+ * Candidate hostnames and unsuppressed tool names are inputs, not findings — but committing them to
+ * a public repository publishes them just as effectively as printing them in the report would.
+ */
+describe('constraint 6: the repository publishes only the report tier', () => {
+  test('gitignore excludes every data tier except reports', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const gitignore = await readFile('.gitignore', 'utf8');
+    expect(gitignore).toContain('data/*');
+    expect(gitignore).toContain('!data/reports/');
+  });
+
+  test('no hostname-bearing data file is tracked by git', async () => {
+    const proc = Bun.spawn(['git', 'ls-files', 'data/'], { stdout: 'pipe' });
+    const tracked = (await new Response(proc.stdout).text())
+      .split('\n')
+      .filter((line) => line.trim() !== '');
+    await proc.exited;
+
+    for (const file of tracked) {
+      expect(file, `${file} is tracked but is not in the report tier`).toMatch(
+        /^data\/reports\//,
+      );
+    }
+  });
+});

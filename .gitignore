@@ -7,6 +7,21 @@ dist/
 !.env.example
 *.pem
 
-# Raw captures are personal-data-adjacent and commercially sensitive.
-# Constraint 7: raw stays private, only the derived tier is published.
-data/runs/
+# Constraint 7, and the half of constraint 6 that is easy to get wrong.
+#
+# Only the REPORT tier is publishable. Everything else under data/ names names:
+#
+#   data/discover/   candidate hostnames. A list of organizations running MCP
+#                    servers is a targeting list in aggregate form, whatever it
+#                    is called, and it is an input rather than a finding.
+#   data/runs/       raw captures: full response bodies and headers. Personal-data
+#                    adjacent and commercially sensitive. Retention-swept.
+#   data/snapshots/  tool names and schemas as declared. The k-anonymity
+#                    suppression that makes a tool name safe to publish happens at
+#                    REPORT time, not at seal time, so a snapshot still holds names
+#                    that identify a single organization.
+#   data/state/      durable host state, keyed by hostname.
+#
+# data/reports/ is the linted, suppressed, aggregate output. That is what ships.
+data/*
+!data/reports/

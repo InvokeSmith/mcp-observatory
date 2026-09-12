@@ -64,6 +64,22 @@ export function classifyWriteCapability(tool: ObservedTool, rules: RuleSet): Det
   if (destructive === true) return determined('yes', 'annotation', 'destructiveHint: true');
 
   const tokens = tokenize(tool.name);
+  const head = tokens[0];
+
+  // The leading token is the operation: MCP tool names are overwhelmingly verb-first. Checking it
+  // before scanning the whole name matters because several entries in the write-verb list are also
+  // nouns — "invoice", "credit", "charge", "post". Without this, `get_invoice` would scan as a write
+  // on its object rather than a read on its verb, and every such tool would land on the wrong side
+  // of the headline denominator.
+  if (head !== undefined) {
+    if (rules.writeVerbs.readVerbs.includes(head)) {
+      return determined('no', 'name', `name begins with "${head}"`);
+    }
+    if (rules.writeVerbs.verbs.includes(head)) {
+      return determined('yes', 'name', `name begins with "${head}"`);
+    }
+  }
+
   const writeVerb = rules.writeVerbs.verbs.find((verb) => tokens.includes(verb));
   if (writeVerb !== undefined) return determined('yes', 'name', `name contains "${writeVerb}"`);
 

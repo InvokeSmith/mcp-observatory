@@ -9,16 +9,13 @@
  */
 import { canonicalize } from '../canon/json.js';
 import { toCsv } from '../canon/csv.js';
-import { classifyTool, type ObservedTool, type ToolClassification } from '../classify/tool.js';
+import { classifySnapshot, type ClassifiedRow } from './classify.js';
 import type { RuleSet } from '../classify/rules.js';
 import { renderRate, wilson, type Proportion } from '../stats/wilson.js';
 import type { SealedSnapshot, } from '../store/seal.js';
 import type { AuthPosture, SnapshotLeaf } from '../store/types.js';
 import { isOnList, type OptOutList } from '../net/optout.js';
 import type { Determination, Trit } from '../classify/types.js';
-
-/** k-anonymity threshold for publishing a tool name. See LEGAL.md item 3. */
-export const TOOL_NAME_K = 5;
 
 export interface ReportInputs {
   readonly snapshot: SealedSnapshot;
@@ -39,13 +36,6 @@ export interface ReportArtifacts {
   readonly 'stats.json': string;
   readonly 'tools.csv': string;
   readonly 'tools.json': string;
-}
-
-interface ToolRow {
-  readonly orgKey: string;
-  readonly toolNameKey: string;
-  readonly publishedName: string;
-  readonly classification: ToolClassification;
 }
 
 const TOOL_COLUMNS = [
@@ -74,34 +64,6 @@ function countBy<T extends string>(values: readonly T[]): readonly (readonly [T,
   return [...counts.entries()].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 }
 
-/**
- * Constraint 6. A tool name is published only if it appears across at least k distinct
- * organizations, because a name alone can identify a company — `acme_internal_billing_refund` names
- * Acme as surely as a hostname would.
- */
-function suppressRareNames(rows: readonly ToolRow[]): readonly ToolRow[] {
-  const orgsByName = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const set = orgsByName.get(row.toolNameKey) ?? new Set<string>();
-    set.add(row.orgKey);
-    orgsByName.set(row.toolNameKey, set);
-  }
-  return rows.map((row) => ({
-    ...row,
-    publishedName:
-      (orgsByName.get(row.toolNameKey)?.size ?? 0) >= TOOL_NAME_K ? row.toolNameKey : '(suppressed)',
-  }));
-}
-
-function toObservedTool(record: SnapshotLeaf['tools'][number]): ObservedTool {
-  return {
-    name: record.name,
-    description: record.description,
-    inputSchema: record.inputSchema,
-    annotations: record.annotations,
-  };
-}
-
 export function buildReport(inputs: ReportInputs): ReportArtifacts {
   const { snapshot, rules, optOut, optOutId, protocolVersion } = inputs;
 
@@ -109,24 +71,8 @@ export function buildReport(inputs: ReportInputs): ReportArtifacts {
   // opted out after it was probed.
   const leaves = snapshot.leaves.filter((leaf) => !isOnList(optOut, leaf.orgKey));
 
-  const rawRows: ToolRow[] = [];
-  for (const leaf of leaves) {
-    for (const tool of leaf.tools) {
-      const observed = toObservedTool(tool);
-      rawRows.push({
-        orgKey: leaf.orgKey,
-        // NFC once, at ingest. Two names that look identical sort differently otherwise.
-        toolNameKey: tool.name.normalize('NFC'),
-        publishedName: tool.name.normalize('NFC'),
-        classification: classifyTool(observed, rules),
-      });
-    }
-  }
-
-  const rows = [...suppressRareNames(rawRows)].sort((a, b) => {
-    if (a.orgKey !== b.orgKey) return a.orgKey < b.orgKey ? -1 : 1;
-    return a.toolNameKey < b.toolNameKey ? -1 : a.toolNameKey > b.toolNameKey ? 1 : 0;
-  });
+  const classified = classifySnapshot(snapshot, rules, leaves);
+  const rows: readonly ClassifiedRow[] = classified.rows;
 
   const writeCapable = rows.filter((r) => r.classification.writeCapable.value === 'yes');
 

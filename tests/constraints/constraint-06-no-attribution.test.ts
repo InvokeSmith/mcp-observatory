@@ -8,7 +8,8 @@
  */
 import { describe, expect, test } from 'bun:test';
 import { loadRuleSet } from '../../src/classify/rules.js';
-import { buildReport, TOOL_NAME_K } from '../../src/stages/report.js';
+import { buildReport } from '../../src/stages/report.js';
+import { TOOL_NAME_K } from '../../src/stages/classify.js';
 import { freshOptOutList } from '../helpers/harness.js';
 import { buildTestSnapshot } from '../helpers/snapshot.js';
 

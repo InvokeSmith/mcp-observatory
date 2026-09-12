@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "id": "shared-platforms",
+  "description": "Domains that host many unrelated tenants but are NOT on the Public Suffix List. Hosts under these are kept as separate organizations instead of being collapsed together.",
+  "sourceNotes": "Organization collapse exists to stop one company with four regional endpoints counting as four data points. On a shared platform the error runs the other way: thirty-one unrelated projects deployed to *.hosted.app are one registrable domain and would count as one data point, silently discarding thirty of them. The Public Suffix List is the right mechanism for this and these entries are simply missing from it; every entry here is a candidate PSL submission rather than a permanent local rule.",
+  "knownLimitation": "This list is necessarily incomplete. Shared platforms not listed here still over-collapse, which understates the organization count. The direction of the bias is recorded in every report.",
+  "platforms": [
+    "hosted.app",
+    "nip.io",
+    "sslip.io",
+    "ngrok.io",
+    "ngrok.app",
+    "ngrok-free.app",
+    "trycloudflare.com",
+    "loca.lt",
+    "serveo.net",
+    "railway.app",
+    "up.railway.app",
+    "onrender.com",
+    "fly.dev",
+    "deno.dev",
+    "val.run",
+    "replit.dev",
+    "repl.co",
+    "glitch.me",
+    "koyeb.app",
+    "smithery.ai",
+    "modal.run",
+    "hf.space"
+  ]
+}

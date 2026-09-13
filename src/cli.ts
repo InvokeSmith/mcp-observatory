@@ -21,7 +21,7 @@ import {
   type Candidate,
 } from './stages/discover.js';
 import { buildReport } from './stages/report.js';
-import { probeTarget, type ProbeTarget } from './stages/probe.js';
+import { notAttemptedLeaf, probeTarget, type ProbeTarget } from './stages/probe.js';
 import { Gate } from './net/gate.js';
 import { HostState } from './net/host-state.js';
 import { parseOptOutList } from './net/optout.js';
@@ -64,7 +64,10 @@ OPTIONS
                       listed in a public directory so that clients would connect
                       to them, which is a much narrower question than scanning
                       hostnames inferred from certificate logs. See LEGAL.md.
-  --limit <n>         Cap candidates, for a first run
+  --limit <n>         Non-negative safe integer (discover and probe).
+                      Probe attempts at most n candidates in manifest order;
+                      remaining candidates are recorded as not-attempted.
+                      Omit to process all; 0 selects none.
   --retention <days>  Retention window for sweep (default: 90)
   --skip-identity-check
                       Run discover without a resolving contact URL. Prints a loud
@@ -74,6 +77,7 @@ OPTIONS
 
 EXAMPLES
   observatory discover --sources ct --limit 500
+  observatory probe --data data --limit 5
   observatory probe --data data
   observatory report --snapshot <id>
 `;
@@ -98,6 +102,13 @@ async function main(): Promise<number> {
   if (values.help === true || command === undefined || command === 'help') {
     process.stdout.write(HELP);
     return 0;
+  }
+
+  if ((command === 'discover' || command === 'probe') && values.limit !== undefined) {
+    if (!/^\d+$/.test(values.limit) || !Number.isSafeInteger(Number(values.limit))) {
+      process.stderr.write('--limit must be a non-negative safe integer\n');
+      return 2;
+    }
   }
 
   switch (command) {
@@ -268,7 +279,12 @@ async function commandProbe(values: Values): Promise<number> {
   );
 
   const leaves: SnapshotLeaf[] = [];
-  for (const target of targets) {
+  const limit = values.limit === undefined ? targets.length : Number(values.limit);
+  for (const [index, target] of targets.entries()) {
+    if (index >= limit) {
+      leaves.push(notAttemptedLeaf(target));
+      continue;
+    }
     const outcome = await probeTarget(gate, hostState, target);
     leaves.push(outcome.leaf);
   }

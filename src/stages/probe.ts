@@ -84,6 +84,11 @@ function leafFor(
   };
 }
 
+/** Keep discovered targets beyond a run's limit in the sealed record of incompleteness. */
+export function notAttemptedLeaf(target: ProbeTarget): SnapshotLeaf {
+  return leafFor(target, 'not-attempted', emptyHttpMetadata());
+}
+
 export async function probeTarget(
   gate: Gate,
   hostState: HostState,

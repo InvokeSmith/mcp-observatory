@@ -122,10 +122,23 @@ The pipeline is four stages, each independently runnable and resumable:
 
 ```bash
 bun run observatory discover                    # official MCP registry; contacts no MCP server
-bun run observatory probe --run <run-id>        # two protocol calls per host; ends by sealing
+bun run observatory probe                      # two protocol calls per host; ends by sealing
 bun run observatory classify --snapshot <id>    # pure; no network
 bun run observatory report --snapshot <id> --ruleset <id> --optout <id>
 ```
+
+For a small pilot using the existing discovery manifest:
+
+```bash
+bun run observatory probe --limit 5
+```
+
+This attempts at most five candidate endpoints in manifest order. Authentication failures, opt-outs,
+and unreachable endpoints count toward the cap. Every remaining candidate is retained in the sealed
+snapshot as `not-attempted`, so the report records the run's incompleteness. The limit accepts a
+non-negative integer: `0` attempts no endpoints, and omitting it processes the whole manifest.
+Use the snapshot ID printed by `probe` for the subsequent `classify` and `report` commands.
+A limited run is an ordered pilot and should be interpreted as a pipeline check.
 
 Every published figure is reproducible from a named snapshot with one command. That is the whole
 credibility argument: the rule sets are data files in [`rules/`](rules/), so you can disagree with a

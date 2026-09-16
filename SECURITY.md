@@ -26,6 +26,13 @@ Two separate things, both fine to raise:
   [`DISCLOSURE.md`](DISCLOSURE.md). Corrections that change a rule change the published numbers for
   everyone, so they are genuinely valuable to us.
 
+## Publishing or rotating our key
+
+`scripts/setup-pgp-key.sh` walks through generating, publishing and round-trip
+testing the OpenPGP key for the contact address. It exists because the key's
+passphrase is a step no agent should take, and because the key expires every two
+years, so rotation follows the same path rather than being rediscovered.
+
 ## Scope
 
 This repository is a research instrument. It has no deployed service, holds no user accounts, and

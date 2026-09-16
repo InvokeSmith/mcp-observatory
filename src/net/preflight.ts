@@ -9,11 +9,14 @@
  */
 import { resolveMx } from 'node:dns/promises';
 import { realFetchRef } from './bootstrap-deny-egress.js';
+import { readFile } from 'node:fs/promises';
 import {
   CONTACT_EMAIL,
   CONTACT_URL,
   isPlaceholderIdentity,
   OPT_OUT_URL,
+  PGP_FINGERPRINT,
+  PGP_KEY_PATH,
   USER_AGENT,
 } from '../config/identity.js';
 
@@ -63,6 +66,26 @@ async function mailReachable(address: string): Promise<{ url: string; ok: boolea
   }
 }
 
+/**
+ * A fingerprint in the docs with no key in the repository is an encryption channel that does not
+ * exist. This does not verify the key is usable — only that we publish what we claim to.
+ */
+async function keyPublished(fingerprint: string): Promise<{ url: string; ok: boolean; detail: string }> {
+  try {
+    const armoured = await readFile(PGP_KEY_PATH, 'utf8');
+    if (!armoured.includes('BEGIN PGP PUBLIC KEY BLOCK')) {
+      return { url: PGP_KEY_PATH, ok: false, detail: 'file is not an ASCII-armoured public key' };
+    }
+    return {
+      url: PGP_KEY_PATH,
+      ok: true,
+      detail: `published, fingerprint ${fingerprint.replace(/\s+/g, '').slice(-16)}`,
+    };
+  } catch {
+    return { url: PGP_KEY_PATH, ok: false, detail: 'declared a fingerprint but published no key file' };
+  }
+}
+
 export async function preflightIdentity(): Promise<PreflightResult> {
   if (isPlaceholderIdentity()) {
     return {
@@ -75,6 +98,7 @@ export async function preflightIdentity(): Promise<PreflightResult> {
     reachable(CONTACT_URL),
     reachable(OPT_OUT_URL),
     ...(CONTACT_EMAIL === null ? [] : [mailReachable(CONTACT_EMAIL)]),
+    ...(PGP_FINGERPRINT === null ? [] : [keyPublished(PGP_FINGERPRINT)]),
   ]);
   return { ok: checks.every((c) => c.ok), checks };
 }

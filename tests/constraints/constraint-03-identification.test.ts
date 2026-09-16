@@ -12,6 +12,8 @@ import {
   CONTACT_EMAIL,
   CONTACT_URL,
   isPlaceholderIdentity,
+  PGP_FINGERPRINT,
+  PGP_KEY_PATH,
   PROJECT_NAME,
   USER_AGENT,
 } from '../../src/config/identity.js';
@@ -91,6 +93,45 @@ describe('constraint 3: identify yourself', () => {
           `${file} promises ${address}, which identity.ts does not declare as CONTACT_EMAIL`,
         ).toBe(CONTACT_EMAIL ?? '<no contact email is declared>');
       }
+    }
+  });
+
+  /**
+   * The same rule as the contact address, for the same reason. A disclosure policy that advertises
+   * encryption it cannot accept is worse than one advertising none: a reporter encrypts a real
+   * finding to a key nobody holds, and believes they have reported it safely.
+   *
+   * This repository shipped that defect twice already — an email address on a domain that did not
+   * exist, and a PGP key promised before first live probing that was not published before probing
+   * began. So the promise is now tied to the declaration.
+   */
+  test('no PGP key is advertised unless one is actually published', async () => {
+    const { readFile, access } = await import('node:fs/promises');
+
+    if (PGP_FINGERPRINT === null) {
+      // Nothing may read as an offer to receive encrypted mail.
+      for (const file of ['DISCLOSURE.md', 'SECURITY.md', 'README.md']) {
+        const text = await readFile(file, 'utf8');
+        expect(text, `${file} advertises a fingerprint while identity declares none`).not.toMatch(
+          /\b[0-9A-F]{4}(\s?[0-9A-F]{4}){7,9}\b/,
+        );
+        expect(text, `${file} tells a reporter to encrypt, but no key is declared`).not.toMatch(
+          /encrypt (it|this|your report|the report) (to|with|using)/i,
+        );
+      }
+      return;
+    }
+
+    // A declared fingerprint means the key must actually be in the repository.
+    await expect(access(PGP_KEY_PATH)).resolves.toBeUndefined();
+    const armoured = await readFile(PGP_KEY_PATH, 'utf8');
+    expect(armoured).toContain('BEGIN PGP PUBLIC KEY BLOCK');
+
+    // And the fingerprint must appear where a reporter would look for it.
+    const normalized = PGP_FINGERPRINT.replace(/\s+/g, '').toUpperCase();
+    for (const file of ['DISCLOSURE.md', 'SECURITY.md']) {
+      const text = (await readFile(file, 'utf8')).replace(/\s+/g, '').toUpperCase();
+      expect(text, `${file} does not carry the declared fingerprint`).toContain(normalized);
     }
   });
 

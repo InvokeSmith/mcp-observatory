@@ -25,3 +25,8 @@ dist/
 # data/reports/ is the linted, suppressed, aggregate output. That is what ships.
 data/*
 !data/reports/
+
+# Handoff artifact from scripts/setup-pgp-key.sh. The fingerprint's home is
+# src/config/identity.ts and the documents; a second copy that can drift is
+# worse than none. The public key itself IS committed.
+security/*.fingerprint

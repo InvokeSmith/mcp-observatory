@@ -107,7 +107,13 @@ what this policy covers.
 Public alternative, if you prefer a visible record that you asked and when:
 https://github.com/InvokeSmith/mcp-observatory/issues
 
-PGP key: to be published before first live probing.
+**PGP:** no key is published yet, so do not encrypt to us — a key advertised before it exists is
+worse than none, because a reporter encrypts a real finding to something nobody holds. This document
+previously said a key would be published before first live probing; probing began on 2026-09-13
+without one, and that sentence was wrong rather than aspirational. A key is being set up, and when it
+is published the fingerprint appears here and in `SECURITY.md`. Until then, if something is sensitive
+enough that plaintext email is wrong for it, say so in a message with no detail and we will arrange a
+channel.
 
 ## If you would rather not be surveyed at all
 

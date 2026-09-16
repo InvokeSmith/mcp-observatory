@@ -29,6 +29,21 @@ export const OPT_OUT_URL = 'https://github.com/invokesmith/mcp-observatory/blob/
  */
 export const CONTACT_EMAIL: string | null = 'observatory@forgestack.dev';
 
+/**
+ * OpenPGP fingerprint for {@link CONTACT_EMAIL}, or null when no key is published yet.
+ *
+ * Null rather than a plausible-looking value, for the same reason {@link CONTACT_EMAIL} was null
+ * before a mailbox existed: a disclosure policy that advertises encryption it cannot accept is worse
+ * than one that advertises none, because a reporter encrypts a real finding to a key nobody holds.
+ *
+ * Setting this makes preflight check that the published key file exists and matches, and allows
+ * DISCLOSURE.md to promise a key at all — a test fails if the document promises one and this is null.
+ */
+export const PGP_FINGERPRINT: string | null = null;
+
+/** Where the ASCII-armoured public key lives in this repository, once there is one. */
+export const PGP_KEY_PATH = 'security/observatory-pubkey.asc';
+
 /** The self-service opt-out path an operator can serve without asking us. */
 export const WELL_KNOWN_OPT_OUT_PATH = '/.well-known/mcp-scan-optout';
 

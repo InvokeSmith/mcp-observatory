@@ -153,6 +153,16 @@ Residual questions, much smaller than the original:
 - The contact URL must resolve to a monitored channel before any live probing. The code enforces
   this (preflight fails closed), but the commitment behind it is a human one.
 
+**Partly resolved.** `observatory@forgestack.dev` was set up on 2026-09-16 and the domain carries
+5 MX records, so the opt-out and disclosure channels promised in `OPTOUT.md` and `DISCLOSURE.md` now
+have somewhere to arrive. What remains under this item:
+
+- No OpenPGP key is published. `DISCLOSURE.md` promised one before first live probing and probing
+  began on 2026-09-13 without it. The document now states the true position rather than the intended
+  one, and a test prevents it from promising a key that `src/config/identity.ts` does not declare.
+- Whether naming a commercial publisher in the User-Agent and `clientInfo` creates exposure that
+  anonymity would not remains open, and is the part that actually needs counsel.
+
 ## 6. Publisher's interest
 
 InvokeSmith sells into the risk class this survey measures. The README discloses this and the
@@ -171,7 +181,7 @@ protocol constrains the analysis accordingly.
 | 2 | Raw retention | **CLOSED BY DESIGN** — no raw tier in v1 | — | — |
 | 3 | Dataset publication | **OPEN** | — | — |
 | 4 | Disclosure timeline | **CLOSED BY ADOPTION** — CERT/CC model, 45-day default | — | — |
-| 5 | Identity and representations | **OPEN** — identity verified in code; mailbox delivery unconfirmed | — | — |
+| 5 | Identity and representations | **OPEN** — URLs and mailbox live; no PGP key; representations question unanswered | — | — |
 | 6 | Publisher's interest | **OPEN** | — | — |
 
 ## Amendments
@@ -181,6 +191,7 @@ mirroring the discipline in `protocol/PROTOCOL.md` §9.
 
 | Date | Change |
 |---|---|
+| 2026-09-16 | Contact mailbox observatory@forgestack.dev set up. PGP key still outstanding; DISCLOSURE.md corrected to state the true position. |
 | 2026-09-16 | Recorded that live probing began on 2026-09-13 against 5 hosts while items 1 and 5 were open. The original standard is retained rather than relaxed. |
 | 2026-09-16 | Item 4 closed by adopting the CERT/CC disclosure model and its 45-day default. |
 | 2026-09-12 | Items 1 and 2 narrowed by design: registry-only population, no raw tier. |

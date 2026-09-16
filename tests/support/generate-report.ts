@@ -5,7 +5,7 @@
  * Run as a subprocess by the determinism test, twice, under different TZ and LANG. An in-process
  * double-run would share module state and miss exactly the class of bug this is for.
  */
-import { loadRuleSet } from '../../src/classify/rules.js';
+import { loadRuleSet, loadVariants } from '../../src/classify/rules.js';
 import { buildReport } from '../../src/stages/report.js';
 import { parseOptOutList } from '../../src/net/optout.js';
 import { buildTestSnapshot } from '../helpers/snapshot.js';
@@ -13,6 +13,7 @@ import { canonicalize } from '../../src/canon/json.js';
 
 const snapshot = await buildTestSnapshot();
 const rules = await loadRuleSet();
+const variants = await loadVariants();
 
 const artifacts = buildReport({
   snapshot,
@@ -21,6 +22,7 @@ const artifacts = buildReport({
   optOut: parseOptOutList('', 0),
   optOutId: 'deterministic-optout',
   protocolVersion: '0.1.0',
+  variants: variants.variants,
 });
 
 const digest = new Bun.CryptoHasher('sha256');

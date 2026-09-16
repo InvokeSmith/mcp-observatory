@@ -85,6 +85,26 @@
         "Limitations",
         "Findings"
       ]
+    },
+    {
+      "id": "PUB-SENSITIVITY-BAND",
+      "reason": "Conflict-of-interest control 2, and section 6 of the protocol. This survey is published by a party that sells into the risk class it measures, so a point estimate alone cannot be checked against the objection that the rules were chosen to produce it. The headline ships as a range across registered rule variants, or it does not ship.",
+      "appliesTo": [
+        "report.md"
+      ],
+      "pattern": "registered variants the headline ranges from"
+    },
+    {
+      "id": "PUB-SENSITIVITY-BEFORE-REPRODUCING",
+      "reason": "The band belongs with the findings, not filed after the reproduction instructions where a reader who stops early will miss it.",
+      "appliesTo": [
+        "report.md"
+      ],
+      "orderedSections": [
+        "Findings",
+        "How much the rules decide",
+        "Reproducing this"
+      ]
     }
   ]
 }

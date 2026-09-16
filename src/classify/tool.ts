@@ -22,6 +22,7 @@ export interface ToolClassification {
   readonly writeCapable: Determination;
   readonly tenantParamStrict: Determination;
   readonly tenantParamInclusive: Determination;
+  readonly tenantParamHeadline: Determination;
   readonly annotationMismatch: Determination;
   readonly guardrailPresent: Determination;
   readonly openEndedSurface: Determination;
@@ -56,12 +57,22 @@ function properties(tool: ObservedTool): readonly SchemaProperty[] {
  * exactly what would make the headline denominator unfalsifiable.
  */
 export function classifyWriteCapability(tool: ObservedTool, rules: RuleSet): Determination {
-  const readOnly = tool.annotations?.['readOnlyHint'];
-  const destructive = tool.annotations?.['destructiveHint'];
+  const precedence = rules.behavior.annotationPrecedence;
 
-  if (readOnly === true) return determined('no', 'annotation', 'readOnlyHint: true');
-  if (readOnly === false) return determined('yes', 'annotation', 'readOnlyHint: false');
-  if (destructive === true) return determined('yes', 'annotation', 'destructiveHint: true');
+  const fromAnnotation = (): Determination | null => {
+    if (precedence === 'ignore') return null;
+    const readOnly = tool.annotations?.['readOnlyHint'];
+    const destructive = tool.annotations?.['destructiveHint'];
+    if (readOnly === true) return determined('no', 'annotation', 'readOnlyHint: true');
+    if (readOnly === false) return determined('yes', 'annotation', 'readOnlyHint: false');
+    if (destructive === true) return determined('yes', 'annotation', 'destructiveHint: true');
+    return null;
+  };
+
+  if (precedence === 'first') {
+    const annotated = fromAnnotation();
+    if (annotated !== null) return annotated;
+  }
 
   const tokens = tokenize(tool.name);
   const head = tokens[0];
@@ -86,7 +97,14 @@ export function classifyWriteCapability(tool: ObservedTool, rules: RuleSet): Det
   const readVerb = rules.writeVerbs.readVerbs.find((verb) => tokens.includes(verb));
   if (readVerb !== undefined) return determined('no', 'name', `name contains "${readVerb}"`);
 
-  if (tool.description !== null && tool.description.trim() !== '') {
+  // Under the registered precedence this is unreachable, because an annotation would already have
+  // decided. It matters under the `last` variant, where name evidence outranks a server's own hint.
+  if (precedence === 'last') {
+    const annotated = fromAnnotation();
+    if (annotated !== null) return annotated;
+  }
+
+  if (rules.behavior.useDescriptionSignal && tool.description !== null && tool.description.trim() !== '') {
     const opening = firstSentence(tool.description).toLowerCase();
     const phrase = rules.descriptionVerbs.phrases.find((p) => opening.includes(p));
     if (phrase !== undefined) {
@@ -247,6 +265,10 @@ export function classifyTool(tool: ObservedTool, rules: RuleSet): ToolClassifica
     writeCapable,
     tenantParamStrict: applicable ? classifyTenantParam(tool, rules, 'strict') : notApplicable,
     tenantParamInclusive: applicable ? classifyTenantParam(tool, rules, 'inclusive') : notApplicable,
+    /** The headline under this rule set's own tenant mode. Equals strict under registered rules. */
+    tenantParamHeadline: applicable
+      ? classifyTenantParam(tool, rules, rules.behavior.tenantMode)
+      : notApplicable,
     annotationMismatch: classifyAnnotationMismatch(tool, rules),
     guardrailPresent: applicable ? classifyGuardrail(tool, rules) : notApplicable,
     openEndedSurface: classifyOpenEndedSurface(tool, rules),

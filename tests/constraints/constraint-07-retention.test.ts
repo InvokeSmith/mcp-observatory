@@ -10,7 +10,7 @@ import { describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadRuleSet } from '../../src/classify/rules.js';
+import { loadRuleSet, loadVariants } from '../../src/classify/rules.js';
 import { seal } from '../../src/store/seal.js';
 import { DEFAULT_RETENTION_DAYS, sweepRuns } from '../../src/store/retention.js';
 import { buildReport } from '../../src/stages/report.js';
@@ -54,6 +54,7 @@ describe('constraint 7: retention', () => {
       optOut: freshOptOutList(),
       optOutId: 'test',
       protocolVersion: '0.1.0',
+      variants: (await loadVariants()).variants,
     });
 
     for (const [name, content] of Object.entries(built)) {

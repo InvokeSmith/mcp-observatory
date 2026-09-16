@@ -5,7 +5,7 @@
  * regenerable from that named snapshot, and — throughout — not one tool invoked.
  */
 import { describe, expect, test } from 'bun:test';
-import { loadRuleSet } from '../src/classify/rules.js';
+import { loadRuleSet, loadVariants } from '../src/classify/rules.js';
 import { classifySnapshot } from '../src/stages/classify.js';
 import { probeTarget } from '../src/stages/probe.js';
 import { buildReport } from '../src/stages/report.js';
@@ -75,6 +75,7 @@ async function runPipeline() {
       optOut: freshOptOutList(),
       optOutId: 'pipeline-optout',
       protocolVersion: '0.1.0',
+      variants: (await loadVariants()).variants,
     });
 
     return { snapshot, classified, artifacts, servers };
@@ -127,6 +128,7 @@ describe('the full pipeline', () => {
       optOut: freshOptOutList(),
       optOutId: 'pipeline-optout',
       protocolVersion: '0.1.0',
+      variants: (await loadVariants()).variants,
     });
 
     expect(again['stats.json']).toBe(artifacts['stats.json']);

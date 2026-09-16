@@ -1,0 +1,55 @@
+{
+  "version": "0.1.0",
+  "id": "headline-variants",
+  "description": "Alternative rule choices the headline figure is recomputed under, so that the published result is a range rather than a point estimate. Registered in protocol/PROTOCOL.md section 6 before any data was collected.",
+  "sourceNotes": "The purpose is adversarial and specifically aimed at this survey's publisher. InvokeSmith sells into the risk class being measured, so the obvious objection to any number it publishes is that the rules were chosen to produce it. A reader cannot evaluate that objection against a single figure. They can evaluate it against a band: if the headline moves very little across every plausible alternative, rule choice was not doing the work, and if it moves a lot, the reader learns that too and should discount accordingly. Either outcome is more informative than one number, which is why this ships whichever way it comes out.",
+  "howToDisagree": "Add a variant here and re-run. If you think a rule choice we did not register would move the figure, that is a contribution, not a complaint.",
+  "variants": [
+    {
+      "id": "baseline",
+      "label": "Registered rules, strict tenant list",
+      "rationale": "The point estimate. Every other variant is a deviation from this one.",
+      "changes": {}
+    },
+    {
+      "id": "tenant-inclusive",
+      "label": "Inclusive tenant list (adds user_id, project_id)",
+      "rationale": "These may be intra-tenant rather than tenant-selecting. Including them is the most generous reading of the headline and almost certainly overstates it.",
+      "changes": { "tenantMode": "inclusive" }
+    },
+    {
+      "id": "verbs-conservative",
+      "label": "Write verbs that are also nouns removed",
+      "rationale": "invoice, credit, debit, charge, post, code, set, open, close, start, stop, run, add and move are all nouns as well as verbs. Dropping them shrinks the write-capable denominator to the least arguable cases, and tests whether the headline depends on generous verb matching.",
+      "changes": {
+        "dropWriteVerbs": ["invoice", "credit", "debit", "charge", "post", "code", "set", "open", "close", "start", "stop", "run", "add", "move", "issue", "apply", "capture"]
+      }
+    },
+    {
+      "id": "verbs-minimal",
+      "label": "Only unambiguous mutation verbs",
+      "rationale": "The narrowest defensible verb list: create, update, delete, remove plus their close synonyms. If the headline survives this, verb choice is not carrying it.",
+      "changes": {
+        "replaceWriteVerbs": ["create", "update", "delete", "remove", "destroy", "purge", "drop", "truncate", "revoke", "refund", "transfer", "payout"]
+      }
+    },
+    {
+      "id": "annotations-ignored",
+      "label": "Server annotations disregarded",
+      "rationale": "readOnlyHint and destructiveHint are self-reported and the MCP specification itself says clients must treat annotations as untrusted. Ignoring them entirely tests how much of the classification rests on a server's own claim about itself.",
+      "changes": { "annotationPrecedence": "ignore" }
+    },
+    {
+      "id": "annotations-last",
+      "label": "Name evidence outranks annotations",
+      "rationale": "Reverses the registered precedence. A tool called delete_account with readOnlyHint true is classified by its name instead of its hint.",
+      "changes": { "annotationPrecedence": "last" }
+    },
+    {
+      "id": "no-description-signal",
+      "label": "Description language disregarded",
+      "rationale": "The weakest of the three write signals, and the one most exposed to marketing prose. Dropping it moves tools from write-capable to undetermined rather than to read-only, so it tests the undetermined rate as much as the headline.",
+      "changes": { "useDescriptionSignal": false }
+    }
+  ]
+}

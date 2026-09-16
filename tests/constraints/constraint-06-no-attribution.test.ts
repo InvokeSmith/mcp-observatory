@@ -7,7 +7,7 @@
  * organizations to name nobody.
  */
 import { describe, expect, test } from 'bun:test';
-import { loadRuleSet } from '../../src/classify/rules.js';
+import { loadRuleSet, loadVariants } from '../../src/classify/rules.js';
 import { buildReport } from '../../src/stages/report.js';
 import { TOOL_NAME_K } from '../../src/stages/classify.js';
 import { freshOptOutList } from '../helpers/harness.js';
@@ -22,6 +22,7 @@ async function artifacts() {
     optOut: freshOptOutList(),
     optOutId: 'test-optout',
     protocolVersion: '0.1.0',
+    variants: (await loadVariants()).variants,
   });
 }
 
@@ -74,6 +75,7 @@ describe('constraint 6: aggregates only', () => {
       optOut: freshOptOutList(),
       optOutId: 'before',
       protocolVersion: '0.1.0',
+      variants: (await loadVariants()).variants,
     });
     const after = buildReport({
       snapshot, rules,
@@ -82,6 +84,7 @@ describe('constraint 6: aggregates only', () => {
       optOut: freshOptOutList(['org-100']),
       optOutId: 'after',
       protocolVersion: '0.1.0',
+      variants: (await loadVariants()).variants,
     });
 
     expect(before['tools.csv']).toContain('org-100');

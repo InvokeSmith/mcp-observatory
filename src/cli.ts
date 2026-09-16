@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { armEgressDenial } from './net/bootstrap-deny-egress.js';
 import { canonicalHash, canonicalize } from './canon/json.js';
-import { loadRuleSet } from './classify/rules.js';
+import { loadRuleSet, loadVariants } from './classify/rules.js';
 import { classifySnapshot } from './stages/classify.js';
 import {
   buildDiscoverManifest,
@@ -334,12 +334,14 @@ async function commandReport(values: Values): Promise<number> {
   const rules = await loadRuleSet();
   const { list, id: optOutId } = await loadOptOut();
 
+  const variants = await loadVariants();
   const artifacts = buildReport({
     snapshot,
     rules,
     optOut: list,
     optOutId,
     protocolVersion: '0.1.0',
+    variants: variants.variants,
   });
 
   // Constraint 8 is a build failure, not a review note. Nothing is written if it fails.

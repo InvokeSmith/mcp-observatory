@@ -12,6 +12,8 @@ import { toCsv } from '../canon/csv.js';
 import { classifySnapshot, type ClassifiedRow } from './classify.js';
 import type { RuleSet } from '../classify/rules.js';
 import { renderRate, wilson, type Proportion } from '../stats/wilson.js';
+import { computeSensitivity, type SensitivityBand } from '../stats/sensitivity.js';
+import type { RuleVariant } from '../classify/rules.js';
 import type { SealedSnapshot, } from '../store/seal.js';
 import type { AuthPosture, SnapshotLeaf } from '../store/types.js';
 import { isOnList, type OptOutList } from '../net/optout.js';
@@ -23,6 +25,12 @@ export interface ReportInputs {
   readonly optOut: OptOutList;
   readonly optOutId: string;
   readonly protocolVersion: string;
+  /**
+   * Registered rule variants. Required rather than optional: protocol/PROTOCOL.md section 6
+   * promises the headline is published as a range, so a report generated without them would be a
+   * report that breaks the preregistration.
+   */
+  readonly variants: readonly RuleVariant[];
 }
 
 export interface Statistic {
@@ -65,7 +73,14 @@ function countBy<T extends string>(values: readonly T[]): readonly (readonly [T,
 }
 
 export function buildReport(inputs: ReportInputs): ReportArtifacts {
-  const { snapshot, rules, optOut, optOutId, protocolVersion } = inputs;
+  const { snapshot, rules, optOut, optOutId, protocolVersion, variants } = inputs;
+
+  if (variants.length === 0) {
+    throw new Error(
+      'refusing to build a report with no registered rule variants: the preregistration promises ' +
+        'the headline as a range, and a point estimate alone would break it',
+    );
+  }
 
   // Opt-out applied at publication time, which is what makes the 24-hour SLA real for a host that
   // opted out after it was probed.
@@ -117,21 +132,42 @@ export function buildReport(inputs: ReportInputs): ReportArtifacts {
   ];
 
   const postures = countBy(leaves.map((l) => l.posture));
+
+  // Discovered is not surveyed. A snapshot records every discovered target, including the ones never
+  // contacted, so that a partial run stays distinguishable from a complete one — which means the
+  // leaf count is a discovery figure and reporting it as a survey size would overstate the work by
+  // however many targets were never attempted.
+  const notAttempted = leaves.filter(
+    (l) => l.posture === 'not-attempted' || l.posture === 'abandoned-after-crash',
+  ).length;
+  const attempted = leaves.length - notAttempted;
   const gated = leaves.filter((l) => l.posture === 'gated' || l.posture === 'partial').length;
   const reachable = leaves.filter(
     (l) => l.posture === 'open' || l.posture === 'gated' || l.posture === 'partial',
   ).length;
+
+  const sensitivity = computeSensitivity(snapshot, rules, variants, leaves);
 
   const stats = {
     snapshotId: snapshot.manifest.snapshotId,
     rulesetId: rules.rulesetId,
     optOutId,
     protocolVersion,
-    organizations: leaves.length,
+    organizationsDiscovered: leaves.length,
+    organizationsAttempted: attempted,
     tools: rows.length,
     postureCounts: postures,
     authGated: wilson(gated, reachable, leaves.length - reachable),
     statistics: statistics.map((s) => ({ id: s.id, label: s.label, ...s.proportion })),
+    sensitivity: {
+      mostInfluential: sensitivity.mostInfluential,
+      variants: sensitivity.variants.map((v) => ({
+        id: v.id,
+        label: v.label,
+        rationale: v.rationale,
+        ...v.proportion,
+      })),
+    },
   };
 
   const csvRows = rows.map((row) => [
@@ -148,7 +184,7 @@ export function buildReport(inputs: ReportInputs): ReportArtifacts {
   ]);
 
   return {
-    'report.md': renderMarkdown(stats, statistics),
+    'report.md': renderMarkdown(stats, statistics, sensitivity),
     'stats.json': canonicalize(stats),
     'tools.csv': toCsv([...TOOL_COLUMNS], csvRows),
     'tools.json': canonicalize(
@@ -178,8 +214,9 @@ function figure(p: Proportion): string {
 }
 
 function renderMarkdown(
-  stats: { snapshotId: string; rulesetId: string; optOutId: string; protocolVersion: string; organizations: number; tools: number; postureCounts: readonly (readonly [AuthPosture, number])[] },
+  stats: { snapshotId: string; rulesetId: string; optOutId: string; protocolVersion: string; organizationsDiscovered: number; organizationsAttempted: number; tools: number; postureCounts: readonly (readonly [AuthPosture, number])[] },
   statistics: readonly Statistic[],
+  sensitivity: SensitivityBand,
 ): string {
   const headline = statistics.find((s) => s.id === 'tenant-param-strict');
 
@@ -214,13 +251,42 @@ distinguishing them would require calling the tool.
 
 Denominators count **decided** cases only. Undetermined counts are never folded in.
 
-Surveyed: ${stats.organizations} organizations, ${stats.tools} tools.
+Contacted: **${stats.organizationsAttempted}** of ${stats.organizationsDiscovered} discovered organizations, yielding ${stats.tools} tool schemas.${
+    stats.organizationsAttempted < stats.organizationsDiscovered
+      ? `\n\n> **This is a partial run.** ${stats.organizationsDiscovered - stats.organizationsAttempted} discovered organizations were never contacted. Every figure below describes the ${stats.organizationsAttempted} that were, and generalising it to the discovered population would be unsupported.`
+      : ''
+  }
 
 ${statistics.map((s) => `- **${s.label}**: ${figure(s.proportion)}`).join('\n')}
 
 ### Posture distribution
 
 ${stats.postureCounts.map(([posture, count]) => `- \`${posture}\`: ${count}`).join('\n')}
+
+## How much the rules decide
+
+This survey is published by an interested party, so the obvious objection to the figure above is
+that the rules were chosen to produce it. That objection cannot be evaluated against one number, so
+the headline is recomputed under every rule variant registered in \`protocol/PROTOCOL.md\` before any
+data was collected. The spread is the answer to "what would tuning the rules have bought?"
+
+**Registered rules: ${figure(sensitivity.baseline.proportion)}**
+
+Across all ${sensitivity.variants.length} registered variants the headline ranges from a low of **${renderRate(sensitivity.lowest.proportion.numerator, sensitivity.lowest.proportion.denominator)}%** (${sensitivity.lowest.label}; ${sensitivity.lowest.proportion.numerator}/${sensitivity.lowest.proportion.denominator}, n = ${sensitivity.lowest.proportion.denominator}) to a high of **${renderRate(sensitivity.highest.proportion.numerator, sensitivity.highest.proportion.denominator)}%** (${sensitivity.highest.label}; ${sensitivity.highest.proportion.numerator}/${sensitivity.highest.proportion.denominator}, n = ${sensitivity.highest.proportion.denominator}).
+
+The single rule choice that moves it furthest from the registered reading is \`${sensitivity.mostInfluential.id}\`, at ${sensitivity.mostInfluential.deltaPoints.toFixed(1)} percentage points.
+
+| Variant | Headline | Why it is registered |
+|---|---|---|
+${sensitivity.variants
+  .map(
+    (v) =>
+      `| \`${v.id}\` | ${figure(v.proportion)} | ${v.rationale} |`,
+  )
+  .join('\n')}
+
+If you think a rule choice we did not register would move the figure, add it to \`rules/variants.json\`
+and re-run. That is a contribution rather than a complaint.
 
 ## Reproducing this
 

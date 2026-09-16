@@ -83,10 +83,20 @@ classifier outputs against an organization key.
 
 ## 4. Coordinated disclosure
 
-See `DISCLOSURE.md` for the policy as drafted.
+**Closed by adoption.** `DISCLOSURE.md` follows the CERT/CC Coordinated Vulnerability Disclosure
+model and its 45-day default, rather than a bespoke policy of our own. That was the cheapest
+available answer and also the better one: nobody has to evaluate a policy they already recognise,
+and the CERT/CC reporter templates are explicitly offered to be adapted.
 
-- Is the proposed 90-day timeline appropriate, given that this survey reports preconditions rather
-  than confirmed vulnerabilities?
+The departures are enumerated in `DISCLOSURE.md` itself rather than left implicit — chiefly that the
+clock governs whether a *specific* finding may be discussed publicly, not whether an organisation
+appears in the published statistics, since aggregate output names nobody either way.
+
+Residual questions, much smaller than the original:
+
+- Is 45 days appropriate given that this survey reports preconditions rather than confirmed
+  vulnerabilities? CERT/CC's rationale is partly to motivate a fix; here there is often nothing to
+  fix, so the deadline may be doing less work than it appears to.
 - What is the obligation when the hand audit (protocol §7) turns up a server that does appear to
   accept a caller-supplied tenant as authoritative — noting that we would have concluded this from
   public documentation, not from testing it?
@@ -117,6 +127,6 @@ protocol constrains the analysis accordingly.
 | 1 | Unsolicited connections | **OPEN** — narrowed to registry-published endpoints | — | — |
 | 2 | Raw retention | **CLOSED BY DESIGN** — no raw tier in v1 | — | — |
 | 3 | Dataset publication | **OPEN** | — | — |
-| 4 | Disclosure timeline | **OPEN** | — | — |
+| 4 | Disclosure timeline | **CLOSED BY ADOPTION** — CERT/CC model, 45-day default | — | — |
 | 5 | Identity and representations | **OPEN** | — | — |
 | 6 | Publisher's interest | **OPEN** | — | — |

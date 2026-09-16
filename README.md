@@ -161,6 +161,9 @@ Stated in full in every generated report, before the findings rather than after 
 ## Legal and disclosure
 
 [`LEGAL.md`](LEGAL.md) lists the open questions for counsel. [`DISCLOSURE.md`](DISCLOSURE.md) is the
-coordinated disclosure policy: individual findings go to the affected vendor privately first.
+coordinated disclosure policy: it follows the CERT/CC model and its 45-day default, and individual
+findings go to the affected vendor privately first. You never appear in the published statistics
+either way — the timeline governs whether a specific finding may be discussed in public, not whether
+you are in the dataset.
 
 Licensed under Apache-2.0.

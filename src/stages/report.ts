@@ -198,9 +198,10 @@ distinguishing them would require calling the tool.
 
 ## Limitations
 
-- **Discovery bias.** The population is servers discoverable by certificate-transparency matching and
-  public registries. Organizations serving MCP at a path on an existing API host are systematically
-  underrepresented. This is not "all MCP servers" and must not be described as such.
+- **Discovery bias.** The population is endpoints their operators published in the official MCP
+  registry, so that clients would connect to them. That skews toward organizations who participate
+  in registries, and it under-represents anyone serving MCP at a path on an existing API host
+  without listing it. This is not "all MCP servers" and must not be described as such.
 - **Schema-only inference.** Every figure rests on what a server declares. Declarations may
   understate or overstate real behavior.
 - **Precondition, not a defect.** Restated above, in full, because it is the distinction on which

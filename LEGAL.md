@@ -4,12 +4,55 @@ This document exists to be answered, not to stand as an answer. Nothing here is 
 nothing here asserts that the activity described is lawful in any particular jurisdiction. Items are
 open until counsel closes them in writing and the closure is recorded here with a date.
 
-**No live probing of third-party servers should begin until items 1 and 5 are closed.** Stage 1
-(`discover`) contacts no MCP server and is a separate question.
-
 Items 1 and 2 were narrowed by changing the design rather than by buying a broader opinion. v1
 surveys only endpoints operators published in a public directory, and retains no raw captures at
 all. Both narrowings cost something, and what they cost is recorded against each item.
+
+## Status of live probing
+
+The original standard recorded here was that **no live probing of third-party servers should begin
+until items 1 and 5 are closed.** That standard is kept below rather than removed, because a document
+that drops its own precondition once the precondition becomes inconvenient is worth nothing, and this
+repository is public — the edit is visible either way.
+
+What actually happened:
+
+**2026-09-13, 02:39:55Z to 02:39:59Z. Five hosts contacted. Items 1 and 5 were open, and remain
+open.**
+
+| | |
+|---|---|
+| Targets attempted | 5, bounded by an explicit `--limit 5` |
+| Targets discovered but not attempted | 19,099, recorded in the snapshot as `not-attempted` |
+| Outcomes | 2 `open`, 2 `gated`, 1 `optout-undetermined` |
+| Tool schemas collected | 5 |
+| Snapshot | `440b66440eb1d766` |
+
+The run was a bounded first exercise of the pipeline, not a survey. The candidate-limit flag it used
+was added in the commit immediately preceding it, which is the clearest available evidence that the
+bound was deliberate rather than incidental.
+
+The design controls all behaved as specified: the two hosts that answered with a credential challenge
+were recorded as terminal and not contacted again, the one host whose opt-out status could not be
+determined was deferred rather than probed, the population was restricted to registry-published
+endpoints, identity preflight passed, and no raw capture was retained.
+
+**None of that closes items 1 or 5.** Controls functioning as designed is evidence that the design is
+implemented, not evidence that the activity is lawful in any jurisdiction, and a small run is not a
+different legal question from a large one — only a smaller instance of the same one. Nothing here
+should be read as counsel having approved anything, because counsel has not been consulted.
+
+What this changes going forward:
+
+- **The full survey population has not been probed and should not be until items 1 and 5 close.**
+  19,099 discovered targets remain unattempted, and that is the decision this standard now governs.
+- **Five organisations are now data subjects of this project**, and everything owed to them applies
+  from the date above: the opt-out guarantee in `OPTOUT.md`, and the coordinated disclosure policy in
+  `DISCLOSURE.md`, whose 45-day clock runs from first contact should anything specific arise.
+- **The preflight gate did not prevent this and was never meant to.** It verifies our own identity
+  resolves. There is no code-level gate on the legal items, because a legal question is not the kind
+  of thing a program can check — which is worth stating plainly rather than leaving someone to infer
+  that a passing preflight means more than it does.
 
 ## 1. Lawfulness of unsolicited connections
 
@@ -124,9 +167,20 @@ protocol constrains the analysis accordingly.
 
 | # | Item | Status | Closed by | Date |
 |---|---|---|---|---|
-| 1 | Unsolicited connections | **OPEN** — narrowed to registry-published endpoints | — | — |
+| 1 | Unsolicited connections | **OPEN** — narrowed to registry-published endpoints; 5 hosts contacted 2026-09-13 while open | — | — |
 | 2 | Raw retention | **CLOSED BY DESIGN** — no raw tier in v1 | — | — |
 | 3 | Dataset publication | **OPEN** | — | — |
 | 4 | Disclosure timeline | **CLOSED BY ADOPTION** — CERT/CC model, 45-day default | — | — |
-| 5 | Identity and representations | **OPEN** | — | — |
+| 5 | Identity and representations | **OPEN** — identity verified in code; mailbox delivery unconfirmed | — | — |
 | 6 | Publisher's interest | **OPEN** | — | — |
+
+## Amendments
+
+This document is versioned in git and amendments are recorded here rather than applied silently,
+mirroring the discipline in `protocol/PROTOCOL.md` §9.
+
+| Date | Change |
+|---|---|
+| 2026-09-16 | Recorded that live probing began on 2026-09-13 against 5 hosts while items 1 and 5 were open. The original standard is retained rather than relaxed. |
+| 2026-09-16 | Item 4 closed by adopting the CERT/CC disclosure model and its 45-day default. |
+| 2026-09-12 | Items 1 and 2 narrowed by design: registry-only population, no raw tier. |

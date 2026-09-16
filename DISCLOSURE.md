@@ -107,13 +107,20 @@ what this policy covers.
 Public alternative, if you prefer a visible record that you asked and when:
 https://github.com/InvokeSmith/mcp-observatory/issues
 
-**PGP:** no key is published yet, so do not encrypt to us — a key advertised before it exists is
-worse than none, because a reporter encrypts a real finding to something nobody holds. This document
-previously said a key would be published before first live probing; probing began on 2026-09-13
-without one, and that sentence was wrong rather than aspirational. A key is being set up, and when it
-is published the fingerprint appears here and in `SECURITY.md`. Until then, if something is sensitive
-enough that plaintext email is wrong for it, say so in a message with no detail and we will arrange a
-channel.
+**PGP:**
+
+```
+ACB3 3098 A000 E615 5313 C35A D6C7 5965 5BBA 418A
+```
+
+RSA-4096, expires 2028-09-15. The public key is in this repository at
+[`security/observatory-pubkey.asc`](security/observatory-pubkey.asc) and on
+[keys.openpgp.org](https://keys.openpgp.org/search?q=ACB33098A000E6155313C35AD6C759655BBA418A).
+
+Verify the fingerprint against the copy in [`SECURITY.md`](SECURITY.md) rather than trusting one
+file. Before this key was advertised here, a message was encrypted to it and decrypted back — an
+encryption channel that has not completed a round trip is an assumption, and this project has
+published two contact channels that did not work.
 
 ## If you would rather not be surveyed at all
 

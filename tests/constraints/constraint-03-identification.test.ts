@@ -106,7 +106,7 @@ describe('constraint 3: identify yourself', () => {
    * began. So the promise is now tied to the declaration.
    */
   test('no PGP key is advertised unless one is actually published', async () => {
-    const { readFile, access } = await import('node:fs/promises');
+    const { readFile } = await import('node:fs/promises');
 
     if (PGP_FINGERPRINT === null) {
       // Nothing may read as an offer to receive encrypted mail.
@@ -122,10 +122,14 @@ describe('constraint 3: identify yourself', () => {
       return;
     }
 
-    // A declared fingerprint means the key must actually be in the repository.
-    await expect(access(PGP_KEY_PATH)).resolves.toBeUndefined();
+    // A declared fingerprint means the key must actually be in the repository. Reading it is the
+    // assertion: an existence check that passes on an empty or truncated file proves nothing.
     const armoured = await readFile(PGP_KEY_PATH, 'utf8');
     expect(armoured).toContain('BEGIN PGP PUBLIC KEY BLOCK');
+    expect(armoured).toContain('END PGP PUBLIC KEY BLOCK');
+    // The published half must never contain the other half.
+    expect(armoured).not.toContain('PRIVATE KEY BLOCK');
+    expect(armoured).not.toContain('SECRET KEY BLOCK');
 
     // And the fingerprint must appear where a reporter would look for it.
     const normalized = PGP_FINGERPRINT.replace(/\s+/g, '').toUpperCase();

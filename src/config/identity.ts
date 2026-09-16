@@ -39,7 +39,7 @@ export const CONTACT_EMAIL: string | null = 'observatory@forgestack.dev';
  * Setting this makes preflight check that the published key file exists and matches, and allows
  * DISCLOSURE.md to promise a key at all — a test fails if the document promises one and this is null.
  */
-export const PGP_FINGERPRINT: string | null = null;
+export const PGP_FINGERPRINT: string | null = 'ACB33098A000E6155313C35AD6C759655BBA418A';
 
 /** Where the ASCII-armoured public key lives in this repository, once there is one. */
 export const PGP_KEY_PATH = 'security/observatory-pubkey.asc';

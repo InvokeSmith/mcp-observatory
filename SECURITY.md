@@ -2,7 +2,15 @@
 
 ## Reporting a vulnerability in this tool
 
-Email **observatory@forgestack.dev**. Please do not open a public issue for a security report.
+Email **observatory@forgestack.dev**, encrypted if the finding warrants it:
+
+```
+ACB3 3098 A000 E615 5313 C35A D6C7 5965 5BBA 418A
+```
+
+RSA-4096, expires 2028-09-15. Public key: [`security/observatory-pubkey.asc`](security/observatory-pubkey.asc).
+
+Public alternative, if you prefer a visible record: https://github.com/InvokeSmith/mcp-observatory/issues
 
 We care most about a specific class of bug here: **anything that would cause this scanner to contact
 a server it should not, or to send a request it should not.** That includes

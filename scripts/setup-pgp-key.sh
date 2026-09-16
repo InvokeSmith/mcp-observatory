@@ -331,13 +331,45 @@ say "it and you can read it. Anything less than a round trip is an assumption,"
 say "and this repository has already shipped two contact channels that did not"
 say "work. So: encrypt a test message to the published key and decrypt it."
 say ""
+# pinentry needs a terminal to ask for the passphrase on. Piping gpg into gpg
+# hands it a pipe as stdin instead, and it fails with "Inappropriate ioctl for
+# device" — a harness failure that looks exactly like a broken key. So: export
+# the tty, and stage through files so stdin stays free for the prompt.
+export GPG_TTY="${GPG_TTY:-$(tty 2>/dev/null || true)}"
+
 TEST_PLAIN="observatory key round-trip $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-if printf '%s' "$TEST_PLAIN" | gpg --armor --encrypt --recipient "$FPR" --trust-model always 2>/dev/null \
-     | gpg --decrypt 2>/dev/null | grep -qF "$TEST_PLAIN"; then
-  printf '  %s✓ Round trip succeeded: the key encrypts and decrypts.%s\n' "$GREEN" "$RESET"
+TEST_DIR=$(mktemp -d)
+trap 'rm -rf "$TEST_DIR"' EXIT
+
+if ! printf '%s' "$TEST_PLAIN" \
+     | gpg --armor --encrypt --recipient "$FPR" --trust-model always > "$TEST_DIR/msg.asc" 2> "$TEST_DIR/enc.err"; then
+  printf '  %s✗ Encryption FAILED — the published key cannot be encrypted to.%s\n' "$RED" "$RESET"
+  say "  This is a real problem with the key, not with this script:"
+  sed 's/^/    /' "$TEST_DIR/enc.err"
+  exit 1
+fi
+printf '  %s✓ Encrypt: a stranger can encrypt to this key.%s\n' "$GREEN" "$RESET"
+
+say ""
+say "Now decrypting it back. GnuPG will ask for your passphrase."
+if gpg --decrypt --output "$TEST_DIR/out.txt" "$TEST_DIR/msg.asc" 2> "$TEST_DIR/dec.err" \
+   && grep -qF "$TEST_PLAIN" "$TEST_DIR/out.txt"; then
+  printf '  %s✓ Decrypt: you can read what was encrypted to it.%s\n' "$GREEN" "$RESET"
+  printf '  %s✓ Round trip succeeded. The key is safe to advertise.%s\n' "$GREEN" "$RESET"
 else
-  printf '  %s✗ Round trip FAILED. Do not advertise this key yet.%s\n' "$RED" "$RESET"
-  say "  Investigate before wiring the fingerprint into the documents."
+  printf '  %s✗ Decryption FAILED. Do not advertise this key yet.%s\n' "$RED" "$RESET"
+  sed 's/^/    /' "$TEST_DIR/dec.err"
+  say ""
+  if grep -q "Inappropriate ioctl\|No pinentry\|pinentry" "$TEST_DIR/dec.err"; then
+    say "That is a passphrase-prompt failure, not a broken key. GnuPG could not"
+    say "open a prompt. On macOS the usual fix is a graphical pinentry:"
+    say ""
+    step "brew install pinentry-mac"
+    step "echo \"pinentry-program \$(brew --prefix)/bin/pinentry-mac\" >> ~/.gnupg/gpg-agent.conf"
+    step "gpgconf --kill gpg-agent"
+    say ""
+    say "Then re-run this wizard. It skips the steps already done."
+  fi
   exit 1
 fi
 say ""

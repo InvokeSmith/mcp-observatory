@@ -157,9 +157,11 @@ Residual questions, much smaller than the original:
 5 MX records, so the opt-out and disclosure channels promised in `OPTOUT.md` and `DISCLOSURE.md` now
 have somewhere to arrive. What remains under this item:
 
-- No OpenPGP key is published. `DISCLOSURE.md` promised one before first live probing and probing
-  began on 2026-09-13 without it. The document now states the true position rather than the intended
-  one, and a test prevents it from promising a key that `src/config/identity.ts` does not declare.
+- ~~No OpenPGP key is published.~~ **Resolved 2026-09-16.** Key `ACB3 3098 A000 E615 5313 C35A D6C7 5965 5BBA 418A` (RSA-4096, expires
+  2028-09-15) is published in the repository and on keys.openpgp.org. It was round-trip tested
+  before being advertised. The promise remains tied to the declaration: a test fails if the
+  documents show a fingerprint that `src/config/identity.ts` does not declare, or a declared
+  fingerprint has no published key behind it.
 - Whether naming a commercial publisher in the User-Agent and `clientInfo` creates exposure that
   anonymity would not remains open, and is the part that actually needs counsel.
 
@@ -181,7 +183,7 @@ protocol constrains the analysis accordingly.
 | 2 | Raw retention | **CLOSED BY DESIGN** — no raw tier in v1 | — | — |
 | 3 | Dataset publication | **OPEN** | — | — |
 | 4 | Disclosure timeline | **CLOSED BY ADOPTION** — CERT/CC model, 45-day default | — | — |
-| 5 | Identity and representations | **OPEN** — URLs and mailbox live; no PGP key; representations question unanswered | — | — |
+| 5 | Identity and representations | **OPEN** — URLs, mailbox and PGP key all live; only the representations question remains | — | — |
 | 6 | Publisher's interest | **OPEN** | — | — |
 
 ## Amendments
@@ -191,7 +193,7 @@ mirroring the discipline in `protocol/PROTOCOL.md` §9.
 
 | Date | Change |
 |---|---|
-| 2026-09-16 | Contact mailbox observatory@forgestack.dev set up. PGP key still outstanding; DISCLOSURE.md corrected to state the true position. |
+| 2026-09-16 | Contact mailbox observatory@forgestack.dev set up, and the OpenPGP key published and round-trip tested. |
 | 2026-09-16 | Recorded that live probing began on 2026-09-13 against 5 hosts while items 1 and 5 were open. The original standard is retained rather than relaxed. |
 | 2026-09-16 | Item 4 closed by adopting the CERT/CC disclosure model and its 45-day default. |
 | 2026-09-12 | Items 1 and 2 narrowed by design: registry-only population, no raw tier. |
